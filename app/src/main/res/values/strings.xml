@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Consola</string>
+    <string name="press_ok_hint">Presioná OK para abrir</string>
+    <string name="open_failed">No se pudo abrir %1$s</string>
+    <string name="hero_favorite">FAVORITO</string>
+    <string name="hero_app">APP</string>
+    <string name="hero_system">SISTEMA</string>
+</resources>

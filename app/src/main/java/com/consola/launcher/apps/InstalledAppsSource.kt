@@ -29,13 +29,21 @@ class InstalledAppsSource(context: Context) {
         }
     }
 
+    /** Todas las apps de TV con su arte. Es I/O: llamalo fuera del hilo principal. */
+    fun loadAll(): List<LoadedApp> =
+        installedApps()
+            .distinctBy { it.packageName }
+            .map { LoadedApp(it, visualsFor(it.packageName)) }
+
     fun visualsFor(packageName: String): AppVisuals =
         visualsCache.getOrPut(packageName) { loadVisuals(packageName) }
 
     private fun loadVisuals(packageName: String): AppVisuals = try {
         val banner = activityBanner(packageName) ?: packageManager.getApplicationBanner(packageName)
         if (banner != null) {
-            val bitmap = banner.toSoftwareBitmap(BANNER_WIDTH_PX, BANNER_HEIGHT_PX)
+            // Al tamaño REAL del banner (o más): forzarlo a otro tamaño y después estirarlo es lo que lo volvía borroso.
+            val width = maxOf(banner.intrinsicWidth, BANNER_WIDTH_PX)
+            val bitmap = banner.toSoftwareBitmap(width, width * BANNER_HEIGHT_PX / BANNER_WIDTH_PX)
             AppVisuals(AppArtwork.Banner(bitmap.asImageBitmap()), accentOf(bitmap))
         } else {
             val bitmap = packageManager.getApplicationIcon(packageName).toSoftwareBitmap(ICON_SIZE_PX, ICON_SIZE_PX)

@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LifecycleStartEffect
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -33,6 +34,10 @@ fun VideoBackground(video: Uri, onError: () -> Unit, modifier: Modifier = Modifi
             setMediaItem(MediaItem.fromUri(video))
             repeatMode = Player.REPEAT_MODE_ONE
             volume = 0f
+            // Volumen 0 no alcanza: el audio se seguiría decodificando. Desactivamos la pista entera.
+            trackSelectionParameters = trackSelectionParameters.buildUpon()
+                .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true)
+                .build()
             playWhenReady = true
             addListener(object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) = currentOnError()

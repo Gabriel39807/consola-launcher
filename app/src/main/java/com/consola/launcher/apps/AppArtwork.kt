@@ -14,3 +14,9 @@ data class AppVisuals(
     val artwork: AppArtwork,
     val accentArgb: Int?,
 )
+
+/** Una app instalada, lista para mostrar. */
+data class LoadedApp(
+    val app: InstalledApp,
+    val visuals: AppVisuals,
+)

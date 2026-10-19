@@ -1,6 +1,6 @@
 # Consola Launcher
 
-Un inicio para Google TV con estilo de consola (PS5/Xbox): una fila de apps, el foco que agranda el tile, un título grande abajo y un **fondo animado**. El fondo es un video en loop o, si no subiste ninguno, una aurora animada generada por código.
+Un inicio para Google TV con estilo de consola: pestañas **Buscar · Inicio · Apps · Ajustes**, un título grande de la app enfocada, una fila de favoritas y un **fondo animado**. El fondo es un video en loop que subís **desde el celular con un QR**, o una aurora animada que toma el color de la app enfocada.
 
 Pensado para: **Challenger 4K con Google TV, Android TV 14**.
 
@@ -35,10 +35,14 @@ app/src/main/java/com/consola/launcher/
 ├── apps/          → qué apps hay y en qué orden
 │   ├── AppCatalog.kt          ← regla de negocio pura (con tests)
 │   └── InstalledAppsSource.kt ← adaptador al PackageManager
-├── background/    → fondos animados (video + aurora)
-├── home/          → la pantalla de inicio
-├── ui/            → tema
-└── LauncherConfig.kt ← TUS favoritos y apps ocultas
+├── background/    → fondos animados (video + aurora) y la biblioteca de videos
+├── home/          → el armazón: pestañas, Inicio y Apps
+├── search/        → la pestaña Buscar (abre el Asistente de Google)
+├── settings/      → Ajustes: fondos, apps del inicio, sistema (guardado con DataStore)
+├── upload/        → subir fondos desde el celular: servidor HTTP, QR y conversión a 1080p
+├── ui/            → tema y márgenes seguros
+├── LauncherGraph.kt  ← una instancia de cada cosa para toda la app (DI a mano)
+└── LauncherConfig.kt ← favoritas y ocultas POR DEFECTO (después se cambian desde Ajustes)
 ```
 
 `AppCatalog` no sabe nada de Android. ¿Y sabés por qué? Porque así lo testeás en milisegundos, sin emulador: [AppCatalogTest.kt](app/src/test/java/com/consola/launcher/apps/AppCatalogTest.kt).
@@ -83,6 +87,17 @@ Consola aparece como una app más en la tele. Abrila desde ahí y movete con el 
 
 ## Paso 4: Tu fondo animado
 
+### Desde el celular (lo normal)
+
+En la tele: **Ajustes → Fondos**. Aparece un QR. Escanealo con el celular (tiene que estar en la misma WiFi), elegí un video y listo. La tele lo **adapta sola** a 1080p H.264 con su codificador por hardware (Media3 Transformer) y lo deja como fondo. Desde esa misma página del celular también podés borrar fondos.
+
+Detalles de seguridad:
+- El servidor existe **solo mientras Ajustes → Fondos está en pantalla**. Salís, y se cierra.
+- La dirección lleva un **código aleatorio** que cambia cada vez. Sin él, el servidor responde 404 a todo.
+- Solo acepta videos (mp4, webm, mkv, mov) de hasta 500 MB. El nombre del archivo se limpia, porque lo manda otro dispositivo.
+
+### Desde la PC (por ADB)
+
 Desde PowerShell, en la carpeta `scripts`:
 
 ```bash
@@ -98,6 +113,8 @@ El script **convierte el video solo** a 1080p H.264 sin audio, si tenés ffmpeg 
 > **Por qué el video usa TextureView y no SurfaceView** (medido en una Challenger con Mali-G52): con SurfaceView, el video queda en una capa aparte que el hardware de la tele no puede mostrar debajo de la interfaz. El sistema la compone con la GPU, escalada a la salida 4K en cada frame (`Comp Type: CLIENT` en `dumpsys SurfaceFlinger`), y navegando el 100 % de los frames salía trabado. Con TextureView, el video es una textura más dentro de la app: queda una sola capa por hardware y solo el **0,75 %** de los frames sale trabado. Ver [background_player.xml](app/src/main/res/layout/background_player.xml).
 
 Si no subís ningún video, o si el video no se puede reproducir, se usa la aurora animada. Nunca te queda una pantalla negra.
+
+> **Por qué la tele convierte los videos** (medido): un 4K VP9 como fondo deja la GPU en ~32 ms por frame y **65 %** de frames trabados con el inicio quieto. El mismo video en 1080p H.264: ~10 ms y **0 %**.
 
 ## Paso 5: Sacar el inicio de Google
 
@@ -137,11 +154,8 @@ Con `-UninstallLauncher` además desinstala Consola. Y en el peor de los casos, 
 
 ## Personalizar
 
-- **Favoritos y apps ocultas:** [LauncherConfig.kt](app/src/main/java/com/consola/launcher/LauncherConfig.kt). Para saber el nombre del paquete de una app:
-
-```bash
-adb shell pm list packages
-```
+- **Favoritas y apps ocultas:** desde la tele, en **Ajustes → Apps del inicio**. Los valores de fábrica están en [LauncherConfig.kt](app/src/main/java/com/consola/launcher/LauncherConfig.kt).
+- **Fondo:** en **Ajustes → Fondos** elegís entre la aurora y tus videos.
 
 - **Tamaño de los tiles, escala del foco:** las constantes al principio de [AppTile.kt](app/src/main/java/com/consola/launcher/home/AppTile.kt).
 - **Colores de la aurora:** las constantes al principio de [AuroraBackground.kt](app/src/main/java/com/consola/launcher/background/AuroraBackground.kt).
@@ -149,6 +163,10 @@ adb shell pm list packages
 ## Ideas para seguir (en orden de dificultad)
 
 1. Un fondo distinto para cada app enfocada (como en la PS5 con cada juego).
-2. Una pantalla de ajustes dentro del launcher para elegir favoritos sin recompilar.
-3. Varias filas (Favoritos / Todas / Juegos).
+2. Reordenar las favoritas desde Ajustes (hoy quedan en el orden en que las marcás).
+3. Varias filas en Inicio (Favoritas / Recientes / Juegos).
 4. Un plan B para el botón Home, por si un update de Google lo rompe: un servicio de accesibilidad que detecte cuando aparece el inicio de Google y abra Consola.
+
+## Un detalle de foco que vale la pena entender
+
+Al subir desde una app hacia las pestañas, la búsqueda de foco 2D de Compose elige la pestaña **más cercana en línea recta**: desde Spotify caía en Ajustes y te cambiaba de pestaña sin querer. `focusRestorer()` no lo evitó (medido en la tele). La solución en [HomeScreen.kt](app/src/main/java/com/consola/launcher/home/HomeScreen.kt) es determinística: mientras el foco está en el contenido, las pestañas no son enfocables. ARRIBA primero intenta moverse dentro del contenido, y si ya no hay nada más arriba, va a la pestaña donde estabas.

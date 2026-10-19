@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consola · Fondos</title>
+<style>
+  :root { color-scheme: dark; --bg: #0b0f1a; --card: #161c2c; --text: #f2f4f8; --muted: #9aa3b5; --accent: #3d5afe; --ok: #2ecc71; --err: #ff6b6b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  main { max-width: 520px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.lead { color: var(--muted); margin: 0 0 24px; line-height: 1.5; }
+  .card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  label.pick { display: block; text-align: center; padding: 28px 16px; border: 2px dashed #34405e; border-radius: 12px; cursor: pointer; }
+  label.pick strong { display: block; font-size: 17px; margin-bottom: 4px; }
+  label.pick span { color: var(--muted); font-size: 14px; }
+  input[type=file] { display: none; }
+  .bar { height: 8px; background: #26304a; border-radius: 4px; overflow: hidden; margin-top: 16px; display: none; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  #status { margin-top: 12px; min-height: 22px; color: var(--muted); }
+  #status.ok { color: var(--ok); } #status.err { color: var(--err); }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid #26304a; }
+  li:first-child { border-top: 0; }
+  li .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  li .tag { color: var(--ok); font-size: 13px; margin-left: 6px; }
+  button { background: transparent; color: var(--err); border: 1px solid #4a2a33; border-radius: 8px; padding: 6px 12px; font-size: 14px; }
+  .empty { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Fondos para tu tele</h1>
+  <p class="lead">Elegí un video de tu celular. La tele lo adapta para que se vea fluido y lo pone de fondo.</p>
+
+  <div class="card">
+    <label class="pick" for="file">
+      <strong>Elegir video</strong>
+      <span>mp4, webm, mkv o mov · hasta 500 MB · ideal de 10 a 30 segundos</span>
+    </label>
+    <input id="file" type="file" accept="video/*">
+    <div class="bar" id="bar"><div id="fill"></div></div>
+    <div id="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>En la tele</h2>
+    <ul id="videos"><li class="empty">Cargando…</li></ul>
+  </div>
+</main>
+
+<script>
+  var base = location.pathname.replace(/\/$/, '');
+  var MAX_BYTES = 500 * 1024 * 1024;
+  var statusEl = document.getElementById('status');
+  var bar = document.getElementById('bar');
+  var fill = document.getElementById('fill');
+  var input = document.getElementById('file');
+  var polling = null;
+
+  function show(text, kind, progress) {
+    statusEl.textContent = text;
+    statusEl.className = kind || '';
+    if (progress == null) { bar.style.display = 'none'; return; }
+    bar.style.display = 'block';
+    fill.style.width = Math.round(progress * 100) + '%';
+  }
+
+  input.addEventListener('change', function () {
+    var file = input.files[0];
+    if (!file) return;
+    if (file.size > MAX_BYTES) { show('Ese video pesa más de 500 MB. Probá con uno más corto.', 'err'); return; }
+    upload(file);
+    input.value = '';
+  });
+
+  function upload(file) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', base + '/upload');
+    xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
+    xhr.upload.onprogress = function (e) {
+      if (e.lengthComputable) show('Subiendo… ' + Math.round(e.loaded * 100 / e.total) + '%', '', e.loaded / e.total);
+    };
+    xhr.onload = function () {
+      if (xhr.status === 200) { show('Recibido. La tele lo está preparando…', '', 0); startPolling(); return; }
+      var reply = {};
+      try { reply = JSON.parse(xhr.responseText); } catch (ignored) {}
+      show(reply.message || 'No se pudo subir el video.', 'err');
+    };
+    xhr.onerror = function () { show('Se cortó la conexión con la tele. ¿Siguen en la misma WiFi?', 'err'); };
+    xhr.send(file);
+  }
+
+  function startPolling() {
+    clearInterval(polling);
+    polling = setInterval(checkStatus, 1000);
+  }
+
+  function checkStatus() {
+    fetch(base + '/status').then(function (r) { return r.json(); }).then(function (s) {
+      if (s.state === 'optimizing') show('Adaptando el video para tu tele… ' + s.percent + '%', '', s.percent / 100);
+      else if (s.state === 'done') { clearInterval(polling); show('¡Listo! Ya es tu fondo.', 'ok'); loadVideos(); }
+      else if (s.state === 'error') { clearInterval(polling); show(s.message || 'No se pudo preparar el video.', 'err'); }
+    }).catch(function () {});
+  }
+
+  function loadVideos() {
+    fetch(base + '/videos').then(function (r) { return r.json(); }).then(function (videos) {
+      var list = document.getElementById('videos');
+      list.innerHTML = '';
+      if (videos.length === 0) {
+        var empty = document.createElement('li');
+        empty.className = 'empty';
+        empty.textContent = 'Todavía no hay videos: se usa la aurora animada.';
+        list.appendChild(empty);
+        return;
+      }
+      videos.forEach(function (v) {
+        var item = document.createElement('li');
+        var name = document.createElement('span');
+        name.className = 'name';
+        name.textContent = v.name;
+        if (v.active) { var tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = '· en uso'; name.appendChild(tag); }
+        var remove = document.createElement('button');
+        remove.textContent = 'Borrar';
+        remove.onclick = function () {
+          if (!confirm('¿Borrar ' + v.name + ' de la tele?')) return;
+          fetch(base + '/delete?name=' + encodeURIComponent(v.name), { method: 'POST' }).then(loadVideos);
+        };
+        item.appendChild(name);
+        item.appendChild(remove);
+        list.appendChild(item);
+      });
+    }).catch(function () {});
+  }
+
+  loadVideos();
+</script>
+</body>
+</html>

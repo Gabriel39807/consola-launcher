@@ -12,8 +12,8 @@ android {
         applicationId = "com.consola.launcher"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     buildTypes {
@@ -51,11 +51,19 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.tv.material)
+    implementation(libs.androidx.compose.material.icons.core)
 
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.transformer)
+    implementation(libs.androidx.media3.effect)
 
     implementation(libs.androidx.palette)
+    implementation(libs.androidx.datastore.preferences)
+
+    // Subir fondos desde el celular: servidor HTTP chiquito + código QR.
+    implementation(libs.nanohttpd)
+    implementation(libs.zxing.core)
 
     testImplementation(libs.junit)
 }

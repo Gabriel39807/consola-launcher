@@ -9,6 +9,9 @@
         android:name="android.hardware.touchscreen"
         android:required="false" />
 
+    <!-- Solo para el servidor que recibe fondos desde el celular, dentro de la red de casa. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!--
         Visibilidad de paquetes (Android 11+): sin esto, queryIntentActivities devuelve una lista VACÍA.
         Pedimos ver solo las apps de TV, no QUERY_ALL_PACKAGES.
@@ -21,6 +24,7 @@
     </queries>
 
     <application
+        android:name=".ConsolaApp"
         android:allowBackup="false"
         android:banner="@drawable/banner"
         android:icon="@drawable/ic_launcher"

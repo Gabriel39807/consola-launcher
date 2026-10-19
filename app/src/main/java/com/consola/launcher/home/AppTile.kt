@@ -24,31 +24,33 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.consola.launcher.apps.AppArtwork
 
-private val TileWidth = 224.dp
-private val TileHeight = 126.dp
-private val TileShape = RoundedCornerShape(12.dp)
+// 160x90 dp en una tele xhdpi (densidad 2) = 320x180 px: EXACTAMENTE el tamaño de un banner de Android TV.
+// Uno a uno, sin estirar: por eso se ve nítido. Antes eran 224 dp = 448 px, y el banner se estiraba un 40 %.
+val TileWidth = 160.dp
+val TileHeight = 90.dp
+
+private val TileShape = RoundedCornerShape(10.dp)
 private val TileBackground = Color(0xFF1C2130)
 private val UnfocusedDim = Color.Black.copy(alpha = 0.3f)
-private const val FocusedScale = 1.15f
 
+/** Sin tamaño propio: el que lo usa decide (fijo en la fila de Inicio, flexible en la grilla de Apps). */
 @Composable
 fun AppTile(
     tile: HomeTile,
     onFocused: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    focusedScale: Float = 1.15f,
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (isFocused) FocusedScale else 1f, label = "tileScale")
+    val scale by animateFloatAsState(if (isFocused) focusedScale else 1f, label = "tileScale")
 
     Box(
         modifier = modifier
-            .size(TileWidth, TileHeight)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -81,14 +83,7 @@ fun AppTile(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        TileArtwork(tile)
-    }
-}
-
-@Composable
-private fun TileArtwork(tile: HomeTile) {
-    when (tile) {
-        is HomeTile.App -> when (val artwork = tile.artwork) {
+        when (val artwork = tile.artwork) {
             is AppArtwork.Banner -> Image(
                 bitmap = artwork.image,
                 contentDescription = tile.label,
@@ -98,10 +93,9 @@ private fun TileArtwork(tile: HomeTile) {
             is AppArtwork.Icon -> Image(
                 bitmap = artwork.image,
                 contentDescription = tile.label,
-                modifier = Modifier.size(72.dp),
+                modifier = Modifier.size(48.dp),
             )
-            AppArtwork.None -> Text(tile.label, style = MaterialTheme.typography.titleMedium)
+            AppArtwork.None -> Text(tile.label, style = MaterialTheme.typography.labelLarge)
         }
-        HomeTile.Settings -> Text("⚙", fontSize = 44.sp)
     }
 }

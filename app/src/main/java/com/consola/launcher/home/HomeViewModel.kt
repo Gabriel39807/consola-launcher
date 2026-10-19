@@ -3,51 +3,70 @@ package com.consola.launcher.home
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.consola.launcher.LauncherConfig
+import com.consola.launcher.ConsolaApp
 import com.consola.launcher.apps.AppCatalog
-import com.consola.launcher.apps.InstalledAppsSource
-import com.consola.launcher.background.BackgroundLibrary
+import com.consola.launcher.apps.LoadedApp
+import com.consola.launcher.background.BackgroundCatalog
+import com.consola.launcher.settings.LauncherSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val appsSource = InstalledAppsSource(application)
-    private val backgrounds = BackgroundLibrary(application)
+    private val graph = (application as ConsolaApp).graph
+    private val installed = MutableStateFlow<List<LoadedApp>>(emptyList())
 
-    private val _state = MutableStateFlow(HomeUiState())
-    val state: StateFlow<HomeUiState> = _state.asStateFlow()
+    // Tres fuentes, un estado: si cambian las apps, los ajustes o los videos, el inicio se recalcula solo.
+    val state: StateFlow<HomeUiState> =
+        combine(installed, graph.settings.settings, graph.backgrounds.videos) { apps, settings, videos ->
+            buildState(apps, settings, videos)
+        }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), HomeUiState())
 
     /** Leer paquetes y decodificar banners es I/O: fuera del hilo principal, o el D-pad se traba. */
     fun refresh() {
-        viewModelScope.launch {
-            _state.value = withContext(Dispatchers.IO) {
-                HomeUiState(tiles = loadTiles(), backgroundVideo = backgrounds.currentVideo())
-            }
+        viewModelScope.launch(Dispatchers.IO) {
+            installed.value = graph.apps.loadAll()
+            graph.backgrounds.rescan()
         }
     }
 
-    private fun loadTiles(): List<HomeTile> {
-        val apps = AppCatalog.arrange(
-            apps = appsSource.installedApps(),
-            selfPackage = getApplication<Application>().packageName,
-            favorites = LauncherConfig.FAVORITES,
-            hidden = LauncherConfig.HIDDEN,
-        )
-        val appTiles: List<HomeTile> = apps.map { app ->
-            val visuals = appsSource.visualsFor(app.packageName)
-            HomeTile.App(
-                packageName = app.packageName,
-                label = app.label,
-                artwork = visuals.artwork,
-                accentArgb = visuals.accentArgb,
-                isFavorite = app.packageName in LauncherConfig.FAVORITES,
+    private fun buildState(apps: List<LoadedApp>, settings: LauncherSettings, videos: List<String>): HomeUiState {
+        val byPackage = apps.associateBy { it.app.packageName }
+        val selfPackage = getApplication<Application>().packageName
+        val installedApps = apps.map { it.app }
+
+        fun tile(packageName: String): HomeTile {
+            val loaded = byPackage.getValue(packageName)
+            return HomeTile(
+                packageName = packageName,
+                label = loaded.app.label,
+                artwork = loaded.visuals.artwork,
+                accentArgb = loaded.visuals.accentArgb,
+                isFavorite = packageName in settings.favorites,
             )
         }
-        return appTiles + HomeTile.Settings
+
+        val allApps = AppCatalog.arrange(installedApps, selfPackage, favorites = emptyList(), hidden = settings.hidden)
+        val favorites = allApps.filter { it.packageName in settings.favorites }
+        // Inicio muestra las favoritas en SU orden. Si no hay ninguna, mostramos todo: nunca un inicio vacío.
+        val home = if (favorites.isEmpty()) allApps else AppCatalog.arrange(favorites, selfPackage, settings.favorites, emptySet())
+
+        return HomeUiState(
+            homeTiles = home.map { tile(it.packageName) },
+            allApps = allApps.map { tile(it.packageName) },
+            backgroundVideo = BackgroundCatalog.resolve(settings.background, videos)?.let(graph.backgrounds::uriOf),
+        )
+    }
+
+    private companion object {
+        const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }

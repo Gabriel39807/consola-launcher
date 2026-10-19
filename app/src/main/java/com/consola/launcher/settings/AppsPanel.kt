@@ -57,7 +57,7 @@ fun AppsPanel(
     Column(Modifier.fillMaxSize()) {
         PanelTitle(stringResource(R.string.settings_apps))
         Text(
-            text = stringResource(R.string.apps_settings_hint),
+            text = stringResource(R.string.apps_settings_tip),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.7f),
         )

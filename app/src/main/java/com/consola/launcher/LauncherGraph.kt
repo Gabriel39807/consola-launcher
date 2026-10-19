@@ -4,6 +4,7 @@ import android.content.Context
 import com.consola.launcher.apps.InstalledAppsSource
 import com.consola.launcher.background.BackgroundLibrary
 import com.consola.launcher.background.VideoThumbnails
+import com.consola.launcher.dream.ScreensaverSetting
 import com.consola.launcher.settings.SettingsRepository
 import com.consola.launcher.settings.settingsDataStore
 import com.consola.launcher.upload.BackgroundUploads
@@ -28,4 +29,5 @@ class LauncherGraph(context: Context) {
     val backgrounds = BackgroundLibrary(appContext)
     val thumbnails = VideoThumbnails()
     val uploads = BackgroundUploads(appContext, backgrounds, settings, appScope)
+    val screensaver = ScreensaverSetting(appContext)
 }

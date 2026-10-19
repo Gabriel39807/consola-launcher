@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Consola</string>
-    <string name="press_ok_hint">Presioná OK para abrir</string>
     <string name="open_failed">No se pudo abrir %1$s</string>
-    <string name="hero_favorite">FAVORITA</string>
-    <string name="hero_app">APP</string>
 
     <!-- Pestañas -->
     <string name="tab_search">Buscar</string>
@@ -13,15 +10,12 @@
     <string name="tab_settings">Ajustes</string>
 
     <!-- Inicio y Apps -->
-    <string name="home_row_title">Tus favoritas</string>
-    <string name="apps_title">Tus apps</string>
-    <string name="apps_count">%1$d apps</string>
+    <string name="move_hint">◀ ▶ para mover · OK para soltar</string>
+    <string name="favorite_added">Agregada a Inicio</string>
+    <string name="favorite_removed">Quitada de Inicio</string>
 
     <!-- Buscar -->
-    <string name="search_title">Buscá con Google</string>
     <string name="search_button">Buscar con la voz</string>
-    <string name="search_hint">Presioná OK y decí lo que querés ver: una película, una serie, un actor…</string>
-    <string name="search_remote_tip">También funciona el botón del micrófono de tu control.</string>
     <string name="search_unavailable">La búsqueda de Google no está disponible en esta tele</string>
 
     <!-- Ajustes -->
@@ -33,20 +27,25 @@
     <string name="bg_aurora">Aurora animada</string>
     <string name="bg_active">En uso</string>
     <string name="bg_upload_title">Subí un video desde tu celular</string>
-    <string name="bg_upload_steps">1. Conectá el celular a la misma WiFi que la tele\n2. Escaneá el código con la cámara\n3. Elegí un video</string>
+    <string name="bg_upload_steps">Con el celular en la misma WiFi, escaneá el código.</string>
     <string name="bg_status_starting">Preparando…</string>
     <string name="bg_status_waiting">Esperando un video…</string>
     <string name="bg_status_receiving">Recibiendo… %1$d%%</string>
-    <string name="bg_status_optimizing">Adaptando el video para tu tele… %1$d%%</string>
-    <string name="bg_status_done">¡Listo! %1$s ya es tu fondo</string>
-    <string name="bg_status_no_network">La tele no está conectada a una red. Conectala a tu WiFi para subir videos.</string>
+    <string name="bg_status_optimizing">Adaptando el video… %1$d%%</string>
+    <string name="bg_status_done">¡Listo! Ya es tu fondo</string>
+    <string name="bg_status_no_network">Conectá la tele a tu WiFi para subir videos.</string>
 
-    <string name="apps_favorite">Favorita</string>
+    <string name="apps_favorite">En Inicio</string>
     <string name="apps_hidden">Oculta</string>
-    <string name="apps_settings_hint">Las favoritas aparecen en Inicio, en este orden. Las ocultas no aparecen en ningún lado.</string>
+    <string name="apps_settings_tip">Tip: en Inicio, mantené OK sobre una app para moverla.</string>
 
     <string name="tv_settings">Ajustes de la tele</string>
-    <string name="tv_settings_desc">Red, pantalla, sonido, cuentas…</string>
+    <string name="tv_settings_desc">Red, pantalla, sonido, cuentas</string>
+    <string name="screensaver_title">Protector de pantalla</string>
+    <string name="screensaver_on">Tu fondo y la hora</string>
+    <string name="screensaver_off">El de Google</string>
+    <string name="screensaver_needs_pc">Se habilita una vez desde la PC (scripts/debloat.ps1)</string>
     <string name="about_version">Consola %1$s</string>
-    <string name="system_home_hint">Para que el botón Home abra Consola hace falta una computadora, una sola vez. Las instrucciones están en el README del proyecto.</string>
+
+    <string name="dream_name">Consola</string>
 </resources>

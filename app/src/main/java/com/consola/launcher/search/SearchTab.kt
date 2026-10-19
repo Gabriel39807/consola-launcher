@@ -4,12 +4,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,13 +27,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.consola.launcher.R
-import com.consola.launcher.ui.TvSafeArea
 
 /**
  * La búsqueda la hace Google (su Asistente sigue instalado aunque saquemos su inicio).
@@ -43,27 +39,11 @@ import com.consola.launcher.ui.TvSafeArea
  */
 @Composable
 fun SearchTab(onSearch: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = TvSafeArea.Horizontal).padding(bottom = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+    Box(
+        modifier = Modifier.fillMaxSize().padding(bottom = 48.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(stringResource(R.string.search_title), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(12.dp))
-        Text(
-            text = stringResource(R.string.search_hint),
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.White.copy(alpha = 0.75f),
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(32.dp))
         SearchButton(onClick = onSearch)
-        Spacer(Modifier.height(20.dp))
-        Text(
-            text = stringResource(R.string.search_remote_tip),
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.55f),
-        )
     }
 }
 

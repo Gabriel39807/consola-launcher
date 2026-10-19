@@ -10,6 +10,7 @@
     .\debloat.ps1 -Device 192.168.1.50:5555 -WhatIf
     .\debloat.ps1 -Device 192.168.1.50:5555
     .\debloat.ps1 -Device 192.168.1.50:5555 -IncludeSetupWraith
+    .\debloat.ps1 -Device 192.168.1.50:5555 -KeepGoogleScreensaver
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
@@ -19,7 +20,10 @@ param(
     [switch] $IncludeSetupWraith,
 
     # Desactiva el protector de pantalla de Google (el que muestra recomendaciones).
-    [switch] $IncludeAmbientMode
+    [switch] $IncludeAmbientMode,
+
+    # No cambia el protector de pantalla (igual se puede activar después desde Ajustes → Sistema).
+    [switch] $KeepGoogleScreensaver
 )
 
 $ErrorActionPreference = 'Stop'
@@ -45,6 +49,17 @@ foreach ($package in $targets) {
         Invoke-Adb shell pm disable-user '--user' 0 $package | Out-Null
         Write-Host "Desactivado: $package" -ForegroundColor Green
     }
+}
+
+# Google TV no tiene pantalla para elegir el protector. Con este permiso, Consola lo cambia desde
+# Ajustes → Sistema. Es un permiso que solo se puede dar por ADB: por eso va acá.
+if ($PSCmdlet.ShouldProcess($LauncherPackage, 'pm grant WRITE_SECURE_SETTINGS')) {
+    Invoke-Adb shell pm grant $LauncherPackage android.permission.WRITE_SECURE_SETTINGS | Out-Null
+    Write-Host "Permiso para elegir el protector de pantalla: concedido" -ForegroundColor Green
+}
+if (-not $KeepGoogleScreensaver -and $PSCmdlet.ShouldProcess($DreamComponent, 'protector de pantalla')) {
+    Invoke-Adb shell settings put secure screensaver_components $DreamComponent | Out-Null
+    Write-Host "Protector de pantalla: tu fondo con la hora" -ForegroundColor Green
 }
 
 if ($PSCmdlet.ShouldProcess($LauncherComponent, 'cmd package set-home-activity')) {

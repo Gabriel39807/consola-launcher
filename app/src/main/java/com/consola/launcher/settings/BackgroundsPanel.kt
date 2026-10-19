@@ -125,7 +125,7 @@ private fun StatusLine(status: UploadStatus) {
         UploadStatus.NoNetwork -> stringResource(R.string.bg_status_no_network) to ErrorColor
         is UploadStatus.Receiving -> stringResource(R.string.bg_status_receiving, status.percent) to Color.White
         is UploadStatus.Optimizing -> stringResource(R.string.bg_status_optimizing, status.percent) to Color.White
-        is UploadStatus.Done -> stringResource(R.string.bg_status_done, status.fileName) to SuccessColor
+        is UploadStatus.Done -> stringResource(R.string.bg_status_done) to SuccessColor
         is UploadStatus.Failed -> status.message to ErrorColor
     }
     Text(text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = color)

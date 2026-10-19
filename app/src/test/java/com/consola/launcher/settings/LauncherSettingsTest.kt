@@ -43,4 +43,28 @@ class LauncherSettingsTest {
 
         assertEquals(emptySet<String>(), result.hidden)
     }
+
+    @Test
+    fun `reordenar respeta el orden que se ve en pantalla`() {
+        val settings = base.copy(favorites = listOf("a", "b", "c"))
+
+        assertEquals(listOf("c", "a", "b"), settings.withVisibleOrder(listOf("c", "a", "b")).favorites)
+    }
+
+    @Test
+    fun `una favorita no instalada se queda en su lugar al reordenar las visibles`() {
+        // "prime" está en favoritas pero no instalada: en pantalla solo se ven yt, netflix y spotify.
+        val settings = base.copy(favorites = listOf("yt", "prime", "netflix", "spotify"))
+
+        val result = settings.withVisibleOrder(listOf("yt", "spotify", "netflix"))
+
+        assertEquals(listOf("yt", "prime", "spotify", "netflix"), result.favorites)
+    }
+
+    @Test
+    fun `un orden con apps que no son favoritas no cambia nada`() {
+        val settings = base.copy(favorites = listOf("a", "b"))
+
+        assertEquals(settings, settings.withVisibleOrder(listOf("b", "x")))
+    }
 }

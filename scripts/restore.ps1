@@ -27,6 +27,18 @@ foreach ($package in @($GoogleHome, $SetupWraith, $AmbientMode)) {
     }
 }
 
+# El protector de pantalla vuelve al de fábrica.
+if ($PSCmdlet.ShouldProcess('screensaver_components', 'protector de fábrica')) {
+    $factory = @(Invoke-Adb shell settings get secure screensaver_default_component)[0]
+    if ($factory -and $factory -ne 'null') {
+        Invoke-Adb shell settings put secure screensaver_components $factory | Out-Null
+        Write-Host "Protector de pantalla: el de fábrica" -ForegroundColor Green
+    }
+}
+if ((Test-PackageInstalled $LauncherPackage) -and $PSCmdlet.ShouldProcess($LauncherPackage, 'pm revoke WRITE_SECURE_SETTINGS')) {
+    Invoke-Adb shell pm revoke $LauncherPackage android.permission.WRITE_SECURE_SETTINGS | Out-Null
+}
+
 if ($UninstallLauncher -and $PSCmdlet.ShouldProcess($LauncherPackage, 'adb uninstall')) {
     Invoke-Adb uninstall $LauncherPackage | Out-Null
     Write-Host "Desinstalado: $LauncherPackage" -ForegroundColor Green

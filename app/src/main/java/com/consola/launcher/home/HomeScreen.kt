@@ -45,6 +45,8 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     var accent by remember { mutableStateOf(DefaultAccent) }
     val tabFocus = remember { Destination.entries.associateWith { FocusRequester() } }
     val gate = remember { TabFocusGate() }
+    // El foco va solo a la primera app UNA vez, al abrir el launcher. Después, cada pestaña respeta dónde estás.
+    var initialFocusDone by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
     fun focusSelectedTab() {
@@ -94,8 +96,21 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             ) {
                 when (destination) {
                     Destination.Search -> SearchTab(onSearch = { SystemActions.openGoogleSearch(context) })
-                    Destination.Home -> HomeTab(tiles = state.homeTiles, onFocused = onAppFocused, onOpen = openApp)
-                    Destination.Apps -> AppsTab(apps = state.allApps, onFocused = onAppFocused, onOpen = openApp)
+                    Destination.Home -> HomeTab(
+                        tiles = state.homeTiles,
+                        requestInitialFocus = !initialFocusDone,
+                        onInitialFocusDone = { initialFocusDone = true },
+                        onFocused = onAppFocused,
+                        onOpen = openApp,
+                        onToggleFavorite = { viewModel.toggleFavorite(it.packageName) },
+                        onReorderFavorites = viewModel::reorderFavorites,
+                    )
+                    Destination.Apps -> AppsTab(
+                        apps = state.allApps,
+                        onFocused = onAppFocused,
+                        onOpen = openApp,
+                        onToggleFavorite = { viewModel.toggleFavorite(it.packageName) },
+                    )
                     Destination.Settings -> SettingsScreen()
                 }
             }

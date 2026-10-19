@@ -40,6 +40,7 @@ app/src/main/java/com/consola/launcher/
 ├── search/        → la pestaña Buscar (abre el Asistente de Google)
 ├── settings/      → Ajustes: fondos, apps del inicio, sistema (guardado con DataStore)
 ├── upload/        → subir fondos desde el celular: servidor HTTP, QR y conversión a 1080p
+├── dream/         → el protector de pantalla: tu fondo con la hora
 ├── ui/            → tema y márgenes seguros
 ├── LauncherGraph.kt  ← una instancia de cada cosa para toda la app (DI a mano)
 └── LauncherConfig.kt ← favoritas y ocultas POR DEFECTO (después se cambian desde Ajustes)
@@ -156,6 +157,9 @@ Con `-UninstallLauncher` además desinstala Consola. Y en el peor de los casos, 
 
 - **Favoritas y apps ocultas:** desde la tele, en **Ajustes → Apps del inicio**. Los valores de fábrica están en [LauncherConfig.kt](app/src/main/java/com/consola/launcher/LauncherConfig.kt).
 - **Fondo:** en **Ajustes → Fondos** elegís entre la aurora y tus videos.
+- **Ordenar el Inicio:** en Inicio, **mantené OK** sobre una app. Se agranda con flechas: movela con ◀ ▶ y soltala con OK (o Atrás).
+- **Agregar o sacar del Inicio:** en Apps, **mantené OK** sobre cualquier app. Las que están en Inicio llevan una estrellita.
+- **Protector de pantalla:** **Ajustes → Sistema → Protector de pantalla** usa tu mismo fondo con la hora, que cambia de esquina cada minuto para no marcar la pantalla. Google TV no tiene una pantalla para elegir protectores, así que el permiso para cambiarlo se da una sola vez con `debloat.ps1` (si no lo querés, pasale `-KeepGoogleScreensaver`).
 
 - **Tamaño de los tiles, escala del foco:** las constantes al principio de [AppTile.kt](app/src/main/java/com/consola/launcher/home/AppTile.kt).
 - **Colores de la aurora:** las constantes al principio de [AuroraBackground.kt](app/src/main/java/com/consola/launcher/background/AuroraBackground.kt).
@@ -163,9 +167,12 @@ Con `-UninstallLauncher` además desinstala Consola. Y en el peor de los casos, 
 ## Ideas para seguir (en orden de dificultad)
 
 1. Un fondo distinto para cada app enfocada (como en la PS5 con cada juego).
-2. Reordenar las favoritas desde Ajustes (hoy quedan en el orden en que las marcás).
-3. Varias filas en Inicio (Favoritas / Recientes / Juegos).
-4. Un plan B para el botón Home, por si un update de Google lo rompe: un servicio de accesibilidad que detecte cuando aparece el inicio de Google y abra Consola.
+2. Varias filas en Inicio (Favoritas / Recientes / Juegos).
+3. Un plan B para el botón Home, por si un update de Google lo rompe: un servicio de accesibilidad que detecte cuando aparece el inicio de Google y abra Consola.
+
+## Mantener OK: por qué no alcanza con `clickable()`
+
+`clickable()` de Compose no distingue "apretar" de "mantener" OK en un control remoto. [TvClickable.kt](app/src/main/java/com/consola/launcher/ui/TvClickable.kt) lo resuelve con la misma regla que usa Android: mientras mantenés la tecla, el sistema la repite, y al cumplirse su tiempo de "mantener" marca la repetición con `FLAG_LONG_PRESS`. Al principio usé un umbral propio más largo (600 ms) y con un control que repite una sola vez quedaba como "toque" y abría la app. Usar la marca del sistema lo hace coincidir con el resto de la tele.
 
 ## Un detalle de foco que vale la pena entender
 

@@ -50,7 +50,7 @@ private const val RenderHeight = 135
  * por frame (el presupuesto a 60 fps es 16 ms). Ahora la GPU solo estira una textura ya hecha.
  */
 @Composable
-fun AuroraBackground(accent: Color, modifier: Modifier = Modifier) {
+fun AuroraBackground(accent: Color, modifier: Modifier = Modifier, withScrim: Boolean = true) {
     val frame = remember {
         ImageBitmap(RenderWidth, RenderHeight).also {
             // Imagen opaca: la GPU la copia directo, sin mezclar con lo que hay detrás.
@@ -77,7 +77,7 @@ fun AuroraBackground(accent: Color, modifier: Modifier = Modifier) {
         frameScope.draw(this, layoutDirection, frameCanvas, Size(RenderWidth.toFloat(), RenderHeight.toFloat())) {
             paintAurora(t, color)
             // Horneado en la misma imagen chiquita: así la GPU no pinta otra capa de pantalla completa encima.
-            paintCinemaScrim()
+            if (withScrim) paintCinemaScrim()
         }
         drawImage(
             image = frame,

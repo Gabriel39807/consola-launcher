@@ -38,6 +38,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun toggleFavorite(packageName: String) {
+        viewModelScope.launch { graph.settings.update { it.toggleFavorite(packageName) } }
+    }
+
+    fun reorderFavorites(visibleOrder: List<String>) {
+        viewModelScope.launch { graph.settings.update { it.withVisibleOrder(visibleOrder) } }
+    }
+
     private fun buildState(apps: List<LoadedApp>, settings: LauncherSettings, videos: List<String>): HomeUiState {
         val byPackage = apps.associateBy { it.app.packageName }
         val selfPackage = getApplication<Application>().packageName

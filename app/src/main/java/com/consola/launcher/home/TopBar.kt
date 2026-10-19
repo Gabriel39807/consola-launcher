@@ -61,7 +61,9 @@ private val PillShape = RoundedCornerShape(50)
  * recta (desde Spotify, Ajustes) y te cambiaba de pestaña sin querer. focusRestorer() no lo evitó: medido en la tele.
  */
 class TabFocusGate {
-    var tabsFocusable: Boolean = true
+    // Arrancan CERRADAS: al abrir la app, Android le da el foco al primer elemento enfocable. Si fuera
+    // la pestaña "Buscar", te cambiaría de sección antes de que Inicio enfocara su primera app.
+    var tabsFocusable: Boolean = false
 }
 
 @Composable

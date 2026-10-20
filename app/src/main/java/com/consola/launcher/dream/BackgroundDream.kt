@@ -10,7 +10,12 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import com.consola.launcher.ConsolaApp
+import com.consola.launcher.settings.FontChoice
+import kotlinx.coroutines.flow.map
 import com.consola.launcher.ui.ConsolaTheme
 
 /**
@@ -44,7 +49,13 @@ class BackgroundDream : DreamService(), LifecycleOwner, SavedStateRegistryOwner 
         val view = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@BackgroundDream)
             setViewTreeSavedStateRegistryOwner(this@BackgroundDream)
-            setContent { ConsolaTheme { DreamScreen(graph) } }
+            setContent {
+                // El protector usa la misma letra que elegiste para el Inicio.
+                // remember: un Flow nuevo en cada redibujado haría que collectAsState se vuelva a suscribir sin parar.
+                val fonts = remember { graph.settings.settings.map { it.font } }
+                val font by fonts.collectAsState(initial = FontChoice.System)
+                ConsolaTheme(font) { DreamScreen(graph) }
+            }
         }
         setContentView(view)
     }

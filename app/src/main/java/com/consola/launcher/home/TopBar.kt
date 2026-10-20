@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,9 +39,9 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.consola.launcher.R
-import kotlinx.coroutines.delay
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import com.consola.launcher.settings.ClockStyle
+import com.consola.launcher.ui.ClockPlacement
+import com.consola.launcher.ui.LiveClock
 
 enum class Destination(@StringRes val label: Int, val icon: ImageVector?) {
     Search(R.string.tab_search, Icons.Default.Search),
@@ -72,6 +71,8 @@ fun TopBar(
     onSelect: (Destination) -> Unit,
     focusRequesters: Map<Destination, FocusRequester>,
     gate: TabFocusGate,
+    clock: ClockStyle,
+    showClock: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -87,7 +88,7 @@ fun TopBar(
             }
         }
         Spacer(Modifier.weight(1f))
-        Clock()
+        if (showClock) LiveClock(style = clock, placement = ClockPlacement.Bar)
     }
 }
 
@@ -140,30 +141,6 @@ private fun NavTab(
                 .size(width = 16.dp, height = 3.dp)
                 .clip(PillShape)
                 .background(if (isSelected && !isFocused) Color.White else Color.Transparent),
-        )
-    }
-}
-
-@Composable
-private fun Clock() {
-    val timeFormat = remember { DateTimeFormatter.ofPattern("HH:mm") }
-    val dayFormat = remember { DateTimeFormatter.ofPattern("EEEE d MMMM") }
-    var now by remember { mutableStateOf(LocalDateTime.now()) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            now = LocalDateTime.now()
-            delay(1_000)
-        }
-    }
-
-    Column(horizontalAlignment = Alignment.End) {
-        Text(now.format(timeFormat), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = now.format(dayFormat).replaceFirstChar { it.uppercase() },
-            style = MaterialTheme.typography.labelMedium,
-            color = Color.White.copy(alpha = 0.7f),
         )
     }
 }

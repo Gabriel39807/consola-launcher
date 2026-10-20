@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,10 +27,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.consola.launcher.background.AnimatedBackground
 import com.consola.launcher.search.SearchTab
+import com.consola.launcher.settings.HomeLayout
 import com.consola.launcher.settings.SettingsScreen
 import com.consola.launcher.ui.TvSafeArea
 
@@ -68,9 +71,43 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
 
     val openApp: (HomeTile) -> Unit = { tile -> SystemActions.openApp(context, tile) }
     val onAppFocused: (HomeTile) -> Unit = { tile -> accent = tile.accentArgb?.let { Color(it) } ?: DefaultAccent }
+    val homeCallbacks = remember(viewModel) {
+        HomeCallbacks(
+            onFocused = onAppFocused,
+            onOpen = openApp,
+            onToggleFavorite = { viewModel.toggleFavorite(it.packageName) },
+            onReorder = viewModel::reorderFavorites,
+            onInitialFocusDone = { initialFocusDone = true },
+            onMediaAction = viewModel::mediaAction,
+        )
+    }
+
+    // El widget de música escucha solo mientras el Inicio está a la vista (y si está activado).
+    val nowPlaying by viewModel.nowPlaying.collectAsStateWithLifecycle()
+    val mediaWidgetOn = state.settings.widgets.nowPlaying
+    // Cada pantalla suelta SOLO lo que agarró: si soltáramos sin haber agarrado, le cortaríamos
+    // la música (o el pulso) al protector de pantalla, que los usa a la vez.
+    LifecycleStartEffect(mediaWidgetOn) {
+        if (mediaWidgetOn) viewModel.startMedia()
+        onStopOrDispose { if (mediaWidgetOn) viewModel.stopMedia() }
+    }
+
+    // El fondo que baila: solo escucha mientras el Inicio está a la vista y la opción está activa.
+    val musicReactive = state.settings.tuning.musicReactive
+    val audioLevels = viewModel.audioLevels.collectAsState()
+    LifecycleStartEffect(musicReactive) {
+        if (musicReactive) viewModel.startPulse()
+        onStopOrDispose { if (musicReactive) viewModel.stopPulse() }
+    }
 
     Box(Modifier.fillMaxSize()) {
-        AnimatedBackground(video = state.backgroundVideo, accent = accent)
+        AnimatedBackground(
+            video = state.backgroundVideo,
+            accent = accent,
+            dim = state.settings.tuning.dim.alpha,
+            // Pasamos el State (no su valor): así solo se redibuja el fondo, no toda la pantalla, 20 veces por segundo.
+            pulse = audioLevels.takeIf { musicReactive },
+        )
 
         Column(Modifier.fillMaxSize()) {
             TopBar(
@@ -78,6 +115,9 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 onSelect = { destination = it },
                 focusRequesters = tabFocus,
                 gate = gate,
+                clock = state.settings.clock,
+                // En Minimal la hora es la protagonista en el centro: no la repetimos arriba.
+                showClock = state.settings.layout != HomeLayout.Minimal,
                 modifier = Modifier.padding(horizontal = TvSafeArea.Horizontal, vertical = TvSafeArea.Vertical),
             )
             Box(
@@ -97,13 +137,14 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 when (destination) {
                     Destination.Search -> SearchTab(onSearch = { SystemActions.openGoogleSearch(context) })
                     Destination.Home -> HomeTab(
-                        tiles = state.homeTiles,
-                        requestInitialFocus = !initialFocusDone,
-                        onInitialFocusDone = { initialFocusDone = true },
-                        onFocused = onAppFocused,
-                        onOpen = openApp,
-                        onToggleFavorite = { viewModel.toggleFavorite(it.packageName) },
-                        onReorderFavorites = viewModel::reorderFavorites,
+                        model = HomeModel(
+                            tiles = state.homeTiles,
+                            allApps = state.allApps,
+                            settings = state.settings,
+                            nowPlaying = nowPlaying,
+                            requestInitialFocus = !initialFocusDone,
+                        ),
+                        callbacks = homeCallbacks,
                     )
                     Destination.Apps -> AppsTab(
                         apps = state.allApps,

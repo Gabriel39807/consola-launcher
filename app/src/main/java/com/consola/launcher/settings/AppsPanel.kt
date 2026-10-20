@@ -44,6 +44,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.consola.launcher.R
 import com.consola.launcher.apps.AppArtwork
+import com.consola.launcher.upload.UploadUiState
+import androidx.compose.ui.graphics.FilterQuality
 
 private val CheckedColor = Color(0xFF3D5AFE)
 
@@ -51,16 +53,33 @@ private val CheckedColor = Color(0xFF3D5AFE)
 @Composable
 fun AppsPanel(
     rows: List<AppSettingRow>,
+    upload: UploadUiState,
     onToggleFavorite: (String) -> Unit,
     onToggleHidden: (String) -> Unit,
 ) {
     Column(Modifier.fillMaxSize()) {
         PanelTitle(stringResource(R.string.settings_apps))
-        Text(
-            text = stringResource(R.string.apps_settings_tip),
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.7f),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Escribir nombres con el control es un martirio: los nombres y portadas se cambian desde el celular.
+            upload.qr?.let { qr ->
+                Box(Modifier.size(72.dp).clip(RoundedCornerShape(8.dp)).background(Color.White).padding(4.dp)) {
+                    Image(qr, contentDescription = upload.url, filterQuality = FilterQuality.None, modifier = Modifier.fillMaxSize())
+                }
+                Spacer(Modifier.width(16.dp))
+            }
+            Column {
+                Text(
+                    text = stringResource(R.string.apps_phone_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.85f),
+                )
+                Text(
+                    text = stringResource(R.string.apps_settings_tip),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.6f),
+                )
+            }
+        }
         LazyColumn(
             modifier = Modifier.focusRestorer(),
             contentPadding = PaddingValues(vertical = 16.dp),

@@ -41,6 +41,7 @@ app/src/main/java/com/consola/launcher/
 ├── settings/      → Ajustes: fondos, apps del inicio, sistema (guardado con DataStore)
 ├── upload/        → subir fondos desde el celular: servidor HTTP, QR y conversión a 1080p
 ├── dream/         → el protector de pantalla: tu fondo con la hora
+├── widgets/       → "Reproduciendo ahora" (Spotify y cualquier app de música) y reloj grande
 ├── ui/            → tema y márgenes seguros
 ├── LauncherGraph.kt  ← una instancia de cada cosa para toda la app (DI a mano)
 └── LauncherConfig.kt ← favoritas y ocultas POR DEFECTO (después se cambian desde Ajustes)
@@ -159,6 +160,13 @@ Con `-UninstallLauncher` además desinstala Consola. Y en el peor de los casos, 
 - **Fondo:** en **Ajustes → Fondos** elegís entre la aurora y tus videos.
 - **Ordenar el Inicio:** en Inicio, **mantené OK** sobre una app. Se agranda con flechas: movela con ◀ ▶ y soltala con OK (o Atrás).
 - **Agregar o sacar del Inicio:** en Apps, **mantené OK** sobre cualquier app. Las que están en Inicio llevan una estrellita.
+- **Estilo del Inicio:** en **Ajustes → Estilo** elegís entre **Cine**, **PS5**, **Xbox**, **Minimal** y **Filas** (tus apps agrupadas solas por tipo: Video, Música, Juegos). Todos comparten tus favoritas, el "mantener OK para mover" y los widgets.
+- **Reloj:** en **Ajustes → Reloj** cambiás formato (24 h / 12 h), segundos, fecha (completa, corta, solo el día u oculta), grosor y tamaño. Se aplica a la barra, al Inicio Minimal, al widget y al protector de pantalla.
+- **Widgets:** en **Ajustes → Widgets** activás **Reproduciendo ahora** (carátula, canción, avance y controles, con el color del disco) y **Reloj grande**. El de música necesita "acceso a notificaciones": la fila "Permitir ver qué está sonando" abre la pantalla de la tele para darlo, o lo da `debloat.ps1`.
+- **Temas:** en **Ajustes → Temas** aplicás un look completo con un clic (Cine, Gamer, Zen, Arcade) o guardás el tuyo. Un tema cambia estilo, reloj, widgets, oscurecido, "que baile" y letra, pero NUNCA tus apps ni tus fondos.
+- **Letras:** Montserrat, Orbitron, Playfair y Bebas Neue (licencia OFL, en `assets/licenses`), o la de la tele.
+- **Fondos vivos:** en **Ajustes → Fondos → Cómo se ve**: cambiar de fondo solo (cada 15, 30 o 60 minutos, o uno de día y otro de noche: mantené OK sobre un fondo para marcarlo), oscurecer el fondo, y **que el fondo baile con la música** (pide permiso de micrófono porque Android lo exige para analizar el audio; no graba nada).
+- **Desde el celular:** el QR de Ajustes abre una página con tres pestañas: **Fondos** (subir y borrar videos), **Apps** (cambiar el nombre y subir una portada propia a cada app; se recorta sola a 16:9) y **Protector** (un mensaje debajo de la hora). El servidor vive solo mientras estás en Ajustes.
 - **Protector de pantalla:** **Ajustes → Sistema → Protector de pantalla** usa tu mismo fondo con la hora, que cambia de esquina cada minuto para no marcar la pantalla. Google TV no tiene una pantalla para elegir protectores, así que el permiso para cambiarlo se da una sola vez con `debloat.ps1` (si no lo querés, pasale `-KeepGoogleScreensaver`).
 
 - **Tamaño de los tiles, escala del foco:** las constantes al principio de [AppTile.kt](app/src/main/java/com/consola/launcher/home/AppTile.kt).
@@ -169,6 +177,14 @@ Con `-UninstallLauncher` además desinstala Consola. Y en el peor de los casos, 
 1. Un fondo distinto para cada app enfocada (como en la PS5 con cada juego).
 2. Varias filas en Inicio (Favoritas / Recientes / Juegos).
 3. Un plan B para el botón Home, por si un update de Google lo rompe: un servicio de accesibilidad que detecte cuando aparece el inicio de Google y abra Consola.
+
+## Cómo baila el fondo
+
+[AudioPulse.kt](app/src/main/java/com/consola/launcher/audio/AudioPulse.kt) usa el `Visualizer` de Android sobre la sesión 0 (la mezcla de todo lo que suena) y [AudioLevels.kt](app/src/main/java/com/consola/launcher/audio/AudioLevels.kt) convierte la FFT en graves, medios y agudos, suavizados para que "suba rápido y baje lento". En la aurora, la luz principal crece con los graves; sobre un video, el degradé se aclara en cada golpe. El pulso se lee en la fase de **dibujo**, no de composición: 20 veces por segundo se redibuja el fondo, no toda la pantalla. Ojo: algunas teles mandan el audio por un camino de hardware que no se puede analizar; en ese caso la opción avisa "Esta tele no deja analizar el audio".
+
+## Cómo sabe el widget qué está sonando
+
+Spotify no le da esa información a otras apps directamente. Pero toda app de música publica una **sesión de medios** para que el control remoto y el sistema la puedan manejar: [NowPlayingSource.kt](app/src/main/java/com/consola/launcher/widgets/NowPlayingSource.kt) lee esa sesión con `MediaSessionManager`. Android solo se la muestra a las apps con acceso a notificaciones, y por eso existe [MediaListener.kt](app/src/main/java/com/consola/launcher/widgets/MediaListener.kt), que no lee ninguna notificación. Android lista solo las sesiones **activas**: si la tele se duerme y la música se corta, el widget muestra "Nada sonando" y un botón para abrir Spotify.
 
 ## Mantener OK: por qué no alcanza con `clickable()`
 

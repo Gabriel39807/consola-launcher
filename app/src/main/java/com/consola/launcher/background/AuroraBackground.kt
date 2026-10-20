@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.IntSize
+import com.consola.launcher.audio.Bands
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
@@ -50,7 +52,13 @@ private const val RenderHeight = 135
  * por frame (el presupuesto a 60 fps es 16 ms). Ahora la GPU solo estira una textura ya hecha.
  */
 @Composable
-fun AuroraBackground(accent: Color, modifier: Modifier = Modifier, withScrim: Boolean = true) {
+fun AuroraBackground(
+    accent: Color,
+    modifier: Modifier = Modifier,
+    withScrim: Boolean = true,
+    dim: Float = 0f,
+    pulse: State<Bands>? = null,
+) {
     val frame = remember {
         ImageBitmap(RenderWidth, RenderHeight).also {
             // Imagen opaca: la GPU la copia directo, sin mezclar con lo que hay detrás.
@@ -74,10 +82,11 @@ fun AuroraBackground(accent: Color, modifier: Modifier = Modifier, withScrim: Bo
         // Leemos phase y tint ACÁ, en la fase de dibujo: cada cambio solo redibuja, no recompone.
         val t = phase
         val color = tint.value
+        val bands = pulse?.value
         frameScope.draw(this, layoutDirection, frameCanvas, Size(RenderWidth.toFloat(), RenderHeight.toFloat())) {
-            paintAurora(t, color)
+            paintAurora(t, color, bass = bands?.bass ?: 0f, mid = bands?.mid ?: 0f)
             // Horneado en la misma imagen chiquita: así la GPU no pinta otra capa de pantalla completa encima.
-            if (withScrim) paintCinemaScrim()
+            if (withScrim) paintCinemaScrim(dim) else if (dim > 0f) drawRect(Color.Black.copy(alpha = dim))
         }
         drawImage(
             image = frame,
@@ -87,11 +96,12 @@ fun AuroraBackground(accent: Color, modifier: Modifier = Modifier, withScrim: Bo
     }
 }
 
-private fun DrawScope.paintAurora(t: Float, accent: Color) {
+/** Con música, la luz principal crece con los graves y la segunda brilla con los medios: el fondo "baila". */
+private fun DrawScope.paintAurora(t: Float, accent: Color, bass: Float, mid: Float) {
     drawRect(Color(AccentTone.forBackground(accent.toArgb(), maxBrightness = 0.12f)))
     // La luz principal va a la derecha: la izquierda queda libre para el título.
-    glow(accent, alpha = 0.70f, x = 0.78f + 0.10f * cos(t), y = 0.30f + 0.10f * sin(t), radius = 0.85f)
-    glow(lerp(accent, Color.Black, 0.35f), alpha = 0.50f, x = 0.45f + 0.15f * sin(2 * t), y = 0.75f + 0.08f * cos(t), radius = 0.70f)
+    glow(accent, alpha = (0.70f + 0.30f * bass).coerceAtMost(1f), x = 0.78f + 0.10f * cos(t), y = 0.30f + 0.10f * sin(t), radius = 0.85f * (1f + 0.35f * bass))
+    glow(lerp(accent, Color.Black, 0.35f), alpha = (0.50f + 0.35f * mid).coerceAtMost(1f), x = 0.45f + 0.15f * sin(2 * t), y = 0.75f + 0.08f * cos(t), radius = 0.70f)
     glow(DeepViolet, alpha = 0.25f, x = 0.20f + 0.10f * cos(t + PI.toFloat()), y = 0.20f + 0.08f * sin(3 * t), radius = 0.60f)
 }
 

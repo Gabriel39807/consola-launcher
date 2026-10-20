@@ -14,6 +14,16 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!--
+        Para "el fondo que baila": Android exige el permiso de micrófono para ANALIZAR el audio que suena
+        (Visualizer), aunque no se use el micrófono. Se pide recién cuando activás la opción.
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false" />
+
+    <!--
         Para elegir el protector de pantalla (Google TV no tiene pantalla para eso). No se puede pedir en pantalla:
         se concede UNA vez por ADB con scripts/debloat.ps1. Sin él, todo lo demás funciona igual.
     -->
@@ -62,6 +72,20 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Para el widget "Reproduciendo ahora": Android solo deja ver qué está sonando a las apps con
+            acceso a notificaciones. No leemos ninguna notificación.
+        -->
+        <service
+            android:name=".widgets.MediaListener"
+            android:exported="true"
+            android:label="@string/media_listener_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <!-- El protector de pantalla: tu fondo con la hora. -->
         <service

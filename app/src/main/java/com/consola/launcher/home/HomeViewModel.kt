@@ -8,27 +8,45 @@ import com.consola.launcher.apps.AppCatalog
 import com.consola.launcher.apps.LoadedApp
 import com.consola.launcher.background.BackgroundCatalog
 import com.consola.launcher.settings.LauncherSettings
+import com.consola.launcher.widgets.MediaAction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalTime
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val graph = (application as ConsolaApp).graph
     private val installed = MutableStateFlow<List<LoadedApp>>(emptyList())
 
-    // Tres fuentes, un estado: si cambian las apps, los ajustes o los videos, el inicio se recalcula solo.
+    // Un "tic" al empezar cada minuto: con eso los fondos que cambian solos (cada X minutos, día/noche) cambian a tiempo.
+    private val minuteTicker = flow {
+        while (true) {
+            emit(Unit)
+            delay(60_000 - System.currentTimeMillis() % 60_000)
+        }
+    }
+
+    // Cuatro fuentes, un estado: si cambian las apps, los ajustes, los videos o el minuto, el inicio se recalcula solo.
     val state: StateFlow<HomeUiState> =
-        combine(installed, graph.settings.settings, graph.backgrounds.videos) { apps, settings, videos ->
+        combine(installed, graph.settings.settings, graph.backgrounds.videos, minuteTicker) { apps, settings, videos, _ ->
             buildState(apps, settings, videos)
         }
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), HomeUiState())
+
+    init {
+        // Si subís una portada desde el celular, el Inicio la muestra sin tener que salir y volver.
+        viewModelScope.launch { graph.covers.version.drop(1).collect { refresh() } }
+    }
 
     /** Leer paquetes y decodificar banners es I/O: fuera del hilo principal, o el D-pad se traba. */
     fun refresh() {
@@ -37,6 +55,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             graph.backgrounds.rescan()
         }
     }
+
+    /** "¿Qué está sonando?" para el widget. Solo escucha mientras el Inicio está visible. */
+    val nowPlaying = graph.nowPlaying.state
+
+    /** Graves/medios/agudos de lo que suena, para el fondo que baila. */
+    val audioLevels = graph.audioPulse.levels
+
+    fun startPulse() = graph.audioPulse.start()
+
+    fun stopPulse() = graph.audioPulse.stop()
+
+    fun startMedia() = graph.nowPlaying.start()
+
+    fun stopMedia() = graph.nowPlaying.stop()
+
+    fun mediaAction(action: MediaAction) = graph.nowPlaying.perform(action)
 
     fun toggleFavorite(packageName: String) {
         viewModelScope.launch { graph.settings.update { it.toggleFavorite(packageName) } }
@@ -55,10 +89,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val loaded = byPackage.getValue(packageName)
             return HomeTile(
                 packageName = packageName,
-                label = loaded.app.label,
+                // Tu nombre propio (Ajustes desde el celular) manda sobre el de la app.
+                label = settings.customNames[packageName] ?: loaded.app.label,
                 artwork = loaded.visuals.artwork,
                 accentArgb = loaded.visuals.accentArgb,
                 isFavorite = packageName in settings.favorites,
+                category = loaded.app.category,
             )
         }
 
@@ -70,7 +106,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         return HomeUiState(
             homeTiles = home.map { tile(it.packageName) },
             allApps = allApps.map { tile(it.packageName) },
-            backgroundVideo = BackgroundCatalog.resolve(settings.background, videos)?.let(graph.backgrounds::uriOf),
+            backgroundVideo = BackgroundCatalog.resolveTimed(
+                choice = settings.background,
+                videos = videos,
+                tuning = settings.tuning,
+                time = LocalTime.now(),
+                epochMinute = System.currentTimeMillis() / 60_000,
+            )?.let(graph.backgrounds::uriOf),
+            settings = settings,
         )
     }
 

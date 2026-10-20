@@ -44,4 +44,10 @@ class UploadRulesTest {
 
         assertEquals(UploadRules.MAX_BASE_NAME_LENGTH + ".mp4".length, result.length)
     }
+
+    @Test
+    fun `un texto del celular se limpia y se corta`() {
+        assertEquals("Hola mundo", UploadRules.cleanText("  Hola\n\tmundo  ", maxLength = 40))
+        assertEquals("abc", UploadRules.cleanText("abcdef", maxLength = 3))
+    }
 }

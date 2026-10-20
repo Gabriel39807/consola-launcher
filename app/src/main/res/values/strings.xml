@@ -15,10 +15,33 @@
     <string name="favorite_removed">Quitada de Inicio</string>
 
     <!-- Buscar -->
+    <string name="search_title">Buscá con Google</string>
+    <string name="search_hint">Películas, series, actores, música. Presioná OK y hablá.</string>
+    <string name="search_examples_title">Probá decir</string>
+    <string name="search_example_1">«Películas de acción»</string>
+    <string name="search_example_2">«Anime en Netflix»</string>
+    <string name="search_example_3">«Poné música para estudiar»</string>
+    <string name="search_remote_tip">También funciona el botón del micrófono de tu control.</string>
     <string name="search_button">Buscar con la voz</string>
     <string name="search_unavailable">La búsqueda de Google no está disponible en esta tele</string>
 
     <!-- Ajustes -->
+    <string name="settings_style">Estilo</string>
+    <string name="settings_themes">Temas</string>
+    <string name="themes_builtin">Para empezar</string>
+    <string name="themes_mine">Tus temas</string>
+    <string name="theme_font">Letra</string>
+    <string name="font_system">La de la tele</string>
+    <string name="font_montserrat">Montserrat (moderna)</string>
+    <string name="font_orbitron">Orbitron (gamer)</string>
+    <string name="font_playfair">Playfair (elegante)</string>
+    <string name="font_bebas">Bebas Neue (impacto)</string>
+    <string name="theme_save">Guardar lo que tengo puesto</string>
+    <string name="theme_save_desc">Estilo, reloj, widgets, fondo y letra, como un tema tuyo</string>
+    <string name="theme_my_prefix">Mi tema</string>
+    <string name="theme_delete_hint">Mantené OK sobre un tema tuyo para borrarlo</string>
+    <string name="settings_clock">Reloj</string>
+    <string name="settings_widgets">Widgets</string>
     <string name="settings_backgrounds">Fondos</string>
     <string name="settings_apps">Apps del inicio</string>
     <string name="settings_system">Sistema</string>
@@ -26,17 +49,36 @@
     <string name="bg_yours">Tus fondos</string>
     <string name="bg_aurora">Aurora animada</string>
     <string name="bg_active">En uso</string>
-    <string name="bg_upload_title">Subí un video desde tu celular</string>
-    <string name="bg_upload_steps">Con el celular en la misma WiFi, escaneá el código.</string>
+    <string name="bg_upload_title">Personalizá desde tu celular</string>
+    <string name="bg_upload_steps">Fondos, nombres y portadas de tus apps, y el mensaje del protector. Con el celular en la misma WiFi, escaneá el código.</string>
     <string name="bg_status_starting">Preparando…</string>
     <string name="bg_status_waiting">Esperando un video…</string>
     <string name="bg_status_receiving">Recibiendo… %1$d%%</string>
     <string name="bg_status_optimizing">Adaptando el video… %1$d%%</string>
     <string name="bg_status_done">¡Listo! Ya es tu fondo</string>
+    <string name="bg_settings">Cómo se ve</string>
+    <string name="bg_rotation">Cambiar de fondo solo</string>
+    <string name="bg_rotation_daynight_hint">Mantené OK sobre un fondo para marcarlo de día o de noche</string>
+    <string name="rotation_off">Nunca</string>
+    <string name="rotation_15">Cada 15 min</string>
+    <string name="rotation_30">Cada 30 min</string>
+    <string name="rotation_60">Cada hora</string>
+    <string name="rotation_day_night">Día y noche</string>
+    <string name="bg_dim">Oscurecer el fondo</string>
+    <string name="dim_none">No</string>
+    <string name="dim_low">Un poco</string>
+    <string name="dim_medium">Bastante</string>
+    <string name="dim_high">Mucho</string>
+    <string name="bg_music">Que el fondo baile con la música</string>
+    <string name="bg_music_desc">Late con lo que suena: Spotify, YouTube, lo que sea</string>
+    <string name="bg_music_unavailable">Esta tele no deja analizar el audio</string>
+    <string name="tag_day">Día</string>
+    <string name="tag_night">Noche</string>
     <string name="bg_status_no_network">Conectá la tele a tu WiFi para subir videos.</string>
 
     <string name="apps_favorite">En Inicio</string>
     <string name="apps_hidden">Oculta</string>
+    <string name="apps_phone_hint">Escaneá el código para cambiar nombres y portadas desde el celular.</string>
     <string name="apps_settings_tip">Tip: en Inicio, mantené OK sobre una app para moverla.</string>
 
     <string name="tv_settings">Ajustes de la tele</string>
@@ -48,4 +90,54 @@
     <string name="about_version">Consola %1$s</string>
 
     <string name="dream_name">Consola</string>
+    <string name="media_listener_name">Consola · Reproduciendo ahora</string>
+
+    <!-- Estilos de Inicio -->
+    <string name="layout_cinema">Cine</string>
+    <string name="layout_cinema_desc">El nombre en grande y la fila abajo</string>
+    <string name="layout_ps5">PS5</string>
+    <string name="layout_ps5_desc">Íconos arriba y el título debajo</string>
+    <string name="layout_xbox">Xbox</string>
+    <string name="layout_xbox_desc">Una destacada y una grilla</string>
+    <string name="layout_minimal">Minimal</string>
+    <string name="layout_minimal_desc">La hora al centro y nada más</string>
+    <string name="layout_rows">Filas</string>
+    <string name="layout_rows_desc">Tus apps ordenadas por tipo</string>
+    <string name="row_favorites">Favoritas</string>
+    <string name="row_video">Video</string>
+    <string name="row_music">Música</string>
+    <string name="row_games">Juegos</string>
+    <string name="row_other">Más apps</string>
+
+    <!-- Reloj -->
+    <string name="clock_format">Formato</string>
+    <string name="clock_format_24">24 horas</string>
+    <string name="clock_format_12">12 horas (a. m. / p. m.)</string>
+    <string name="clock_seconds">Segundos</string>
+    <string name="clock_date">Fecha</string>
+    <string name="clock_date_full">Completa</string>
+    <string name="clock_date_short">Corta (19/10/2026)</string>
+    <string name="clock_date_weekday">Solo el día</string>
+    <string name="clock_date_hidden">Oculta</string>
+    <string name="clock_weight">Grosor</string>
+    <string name="clock_weight_light">Fino</string>
+    <string name="clock_weight_regular">Normal</string>
+    <string name="clock_weight_bold">Grueso</string>
+    <string name="clock_size">Tamaño</string>
+    <string name="clock_size_small">Chico</string>
+    <string name="clock_size_medium">Mediano</string>
+    <string name="clock_size_large">Grande</string>
+    <string name="yes">Sí</string>
+    <string name="no">No</string>
+    <string name="press_ok_to_change">OK para cambiar</string>
+
+    <!-- Widgets -->
+    <string name="widget_now_playing">Reproduciendo ahora</string>
+    <string name="widget_now_playing_desc">Spotify, YouTube Music y más, con controles</string>
+    <string name="widget_now_playing_access">Permitir ver qué está sonando</string>
+    <string name="widget_now_playing_access_desc">La tele te lo pide una sola vez</string>
+    <string name="widget_big_clock">Reloj grande</string>
+    <string name="widget_big_clock_desc">La hora en grande en el Inicio</string>
+    <string name="now_playing_idle">Nada sonando</string>
+    <string name="now_playing_open">Abrir %1$s</string>
 </resources>

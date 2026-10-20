@@ -3,107 +3,164 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Consola · Fondos</title>
+<title>Consola · Personalizar</title>
 <style>
-  :root { color-scheme: dark; --bg: #0b0f1a; --card: #161c2c; --text: #f2f4f8; --muted: #9aa3b5; --accent: #3d5afe; --ok: #2ecc71; --err: #ff6b6b; }
+  :root { color-scheme: dark; --bg: #0b0f1a; --card: #161c2c; --line: #26304a; --text: #f2f4f8; --muted: #9aa3b5; --accent: #3d5afe; --ok: #2ecc71; --err: #ff6b6b; }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--text); }
-  main { max-width: 520px; margin: 0 auto; padding: 24px 16px 48px; }
+  main { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
   h1 { font-size: 22px; margin: 0 0 4px; }
-  p.lead { color: var(--muted); margin: 0 0 24px; line-height: 1.5; }
+  p.lead { color: var(--muted); margin: 0 0 20px; line-height: 1.5; }
+  nav { display: flex; gap: 8px; margin-bottom: 16px; position: sticky; top: 0; background: var(--bg); padding: 8px 0; z-index: 1; }
+  nav button { flex: 1; background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 10px 0; font-size: 15px; }
+  nav button.on { background: var(--accent); border-color: var(--accent); }
+  section { display: none; } section.on { display: block; }
   .card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
   label.pick { display: block; text-align: center; padding: 28px 16px; border: 2px dashed #34405e; border-radius: 12px; cursor: pointer; }
   label.pick strong { display: block; font-size: 17px; margin-bottom: 4px; }
   label.pick span { color: var(--muted); font-size: 14px; }
   input[type=file] { display: none; }
-  .bar { height: 8px; background: #26304a; border-radius: 4px; overflow: hidden; margin-top: 16px; display: none; }
+  input[type=text] { width: 100%; background: #0f1422; color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 16px; }
+  .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 16px; display: none; }
   .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
-  #status { margin-top: 12px; min-height: 22px; color: var(--muted); }
-  #status.ok { color: var(--ok); } #status.err { color: var(--err); }
+  .status { margin-top: 12px; min-height: 22px; color: var(--muted); font-size: 14px; }
+  .status.ok { color: var(--ok); } .status.err { color: var(--err); }
   h2 { font-size: 16px; margin: 0 0 12px; }
   ul { list-style: none; padding: 0; margin: 0; }
-  li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid #26304a; }
+  li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
   li:first-child { border-top: 0; }
   li .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   li .tag { color: var(--ok); font-size: 13px; margin-left: 6px; }
-  button { background: transparent; color: var(--err); border: 1px solid #4a2a33; border-radius: 8px; padding: 6px 12px; font-size: 14px; }
+  button.small { background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; font-size: 14px; white-space: nowrap; }
+  button.danger { color: var(--err); border-color: #4a2a33; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .app { border-top: 1px solid var(--line); padding: 14px 0; }
+  .app:first-child { border-top: 0; padding-top: 0; }
+  .app .title { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
   .empty { color: var(--muted); }
+  .count { color: var(--muted); font-size: 13px; margin-top: 6px; text-align: right; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Fondos para tu tele</h1>
-  <p class="lead">Elegí un video de tu celular. La tele lo adapta para que se vea fluido y lo pone de fondo.</p>
+  <h1>Personalizá tu tele</h1>
+  <p class="lead">Todo lo que cambies acá se ve al instante en la tele.</p>
 
-  <div class="card">
-    <label class="pick" for="file">
-      <strong>Elegir video</strong>
-      <span>mp4, webm, mkv o mov · hasta 500 MB · ideal de 10 a 30 segundos</span>
-    </label>
-    <input id="file" type="file" accept="video/*">
-    <div class="bar" id="bar"><div id="fill"></div></div>
-    <div id="status"></div>
-  </div>
+  <nav>
+    <button data-tab="fondos" class="on">Fondos</button>
+    <button data-tab="apps">Apps</button>
+    <button data-tab="protector">Protector</button>
+  </nav>
 
-  <div class="card">
-    <h2>En la tele</h2>
-    <ul id="videos"><li class="empty">Cargando…</li></ul>
-  </div>
+  <!-- ===== Fondos ===== -->
+  <section id="fondos" class="on">
+    <div class="card">
+      <label class="pick" for="video">
+        <strong>Elegir video</strong>
+        <span>mp4, webm, mkv o mov · hasta 500 MB · ideal de 10 a 30 segundos</span>
+      </label>
+      <input id="video" type="file" accept="video/*">
+      <div class="bar" id="bar"><div id="fill"></div></div>
+      <div class="status" id="videoStatus"></div>
+    </div>
+    <div class="card">
+      <h2>En la tele</h2>
+      <ul id="videos"><li class="empty">Cargando…</li></ul>
+    </div>
+  </section>
+
+  <!-- ===== Apps ===== -->
+  <section id="apps">
+    <div class="card">
+      <h2>Tus apps</h2>
+      <p class="lead" style="margin-bottom:12px">Cambiales el nombre o poneles una portada propia. La imagen se recorta sola a formato de tele (16:9).</p>
+      <div id="appList"><div class="empty">Cargando…</div></div>
+    </div>
+  </section>
+
+  <!-- ===== Protector ===== -->
+  <section id="protector">
+    <div class="card">
+      <h2>Mensaje del protector de pantalla</h2>
+      <p class="lead" style="margin-bottom:12px">Aparece debajo de la hora cuando la tele está quieta. Dejalo vacío para no mostrar nada.</p>
+      <input id="message" type="text" maxlength="120" placeholder="Ej: Bienvenidos a casa">
+      <div class="count"><span id="messageCount">0</span>/120</div>
+      <div class="row"><button class="small primary" id="saveMessage">Guardar</button></div>
+      <div class="status" id="messageStatus"></div>
+    </div>
+  </section>
 </main>
 
 <script>
   var base = location.pathname.replace(/\/$/, '');
-  var MAX_BYTES = 500 * 1024 * 1024;
-  var statusEl = document.getElementById('status');
-  var bar = document.getElementById('bar');
-  var fill = document.getElementById('fill');
-  var input = document.getElementById('file');
-  var polling = null;
+  var MAX_VIDEO = 500 * 1024 * 1024;
+  var MAX_IMAGE = 10 * 1024 * 1024;
 
-  function show(text, kind, progress) {
-    statusEl.textContent = text;
-    statusEl.className = kind || '';
-    if (progress == null) { bar.style.display = 'none'; return; }
-    bar.style.display = 'block';
-    fill.style.width = Math.round(progress * 100) + '%';
-  }
-
-  input.addEventListener('change', function () {
-    var file = input.files[0];
-    if (!file) return;
-    if (file.size > MAX_BYTES) { show('Ese video pesa más de 500 MB. Probá con uno más corto.', 'err'); return; }
-    upload(file);
-    input.value = '';
+  // ---------- Pestañas ----------
+  document.querySelectorAll('nav button').forEach(function (button) {
+    button.onclick = function () {
+      document.querySelectorAll('nav button').forEach(function (b) { b.classList.toggle('on', b === button); });
+      document.querySelectorAll('section').forEach(function (s) { s.classList.toggle('on', s.id === button.dataset.tab); });
+      if (button.dataset.tab === 'apps') loadApps();
+      if (button.dataset.tab === 'protector') loadMessage();
+    };
   });
 
-  function upload(file) {
+  function setStatus(element, text, kind) {
+    element.textContent = text;
+    element.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  function post(path, body, onDone) {
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', base + '/upload');
-    xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
-    xhr.upload.onprogress = function (e) {
-      if (e.lengthComputable) show('Subiendo… ' + Math.round(e.loaded * 100 / e.total) + '%', '', e.loaded / e.total);
-    };
+    xhr.open('POST', base + path);
     xhr.onload = function () {
-      if (xhr.status === 200) { show('Recibido. La tele lo está preparando…', '', 0); startPolling(); return; }
       var reply = {};
       try { reply = JSON.parse(xhr.responseText); } catch (ignored) {}
-      show(reply.message || 'No se pudo subir el video.', 'err');
+      onDone(xhr.status === 200 && reply.ok !== false, reply);
     };
-    xhr.onerror = function () { show('Se cortó la conexión con la tele. ¿Siguen en la misma WiFi?', 'err'); };
-    xhr.send(file);
+    xhr.onerror = function () { onDone(false, { message: 'Se cortó la conexión con la tele. ¿Siguen en la misma WiFi?' }); };
+    return xhr;
   }
+
+  // ---------- Fondos ----------
+  var videoStatus = document.getElementById('videoStatus');
+  var bar = document.getElementById('bar');
+  var fill = document.getElementById('fill');
+  var polling = null;
+
+  function progress(value) {
+    if (value == null) { bar.style.display = 'none'; return; }
+    bar.style.display = 'block';
+    fill.style.width = Math.round(value * 100) + '%';
+  }
+
+  document.getElementById('video').addEventListener('change', function (event) {
+    var file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > MAX_VIDEO) { setStatus(videoStatus, 'Ese video pesa más de 500 MB. Probá con uno más corto.', 'err'); return; }
+    var xhr = post('/upload', null, function (ok, reply) {
+      if (ok) { setStatus(videoStatus, 'Recibido. La tele lo está preparando…'); progress(0); startPolling(); }
+      else { progress(null); setStatus(videoStatus, reply.message || 'No se pudo subir el video.', 'err'); }
+    });
+    xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
+    xhr.upload.onprogress = function (e) {
+      if (e.lengthComputable) { setStatus(videoStatus, 'Subiendo… ' + Math.round(e.loaded * 100 / e.total) + '%'); progress(e.loaded / e.total); }
+    };
+    xhr.send(file);
+  });
 
   function startPolling() {
     clearInterval(polling);
-    polling = setInterval(checkStatus, 1000);
-  }
-
-  function checkStatus() {
-    fetch(base + '/status').then(function (r) { return r.json(); }).then(function (s) {
-      if (s.state === 'optimizing') show('Adaptando el video para tu tele… ' + s.percent + '%', '', s.percent / 100);
-      else if (s.state === 'done') { clearInterval(polling); show('¡Listo! Ya es tu fondo.', 'ok'); loadVideos(); }
-      else if (s.state === 'error') { clearInterval(polling); show(s.message || 'No se pudo preparar el video.', 'err'); }
-    }).catch(function () {});
+    polling = setInterval(function () {
+      fetch(base + '/status').then(function (r) { return r.json(); }).then(function (s) {
+        if (s.state === 'optimizing') { setStatus(videoStatus, 'Adaptando el video para tu tele… ' + s.percent + '%'); progress(s.percent / 100); }
+        else if (s.state === 'done') { clearInterval(polling); progress(null); setStatus(videoStatus, '¡Listo! Ya es tu fondo.', 'ok'); loadVideos(); }
+        else if (s.state === 'error') { clearInterval(polling); progress(null); setStatus(videoStatus, s.message || 'No se pudo preparar el video.', 'err'); }
+      }).catch(function () {});
+    }, 1000);
   }
 
   function loadVideos() {
@@ -124,10 +181,11 @@
         name.textContent = v.name;
         if (v.active) { var tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = '· en uso'; name.appendChild(tag); }
         var remove = document.createElement('button');
+        remove.className = 'small danger';
         remove.textContent = 'Borrar';
         remove.onclick = function () {
           if (!confirm('¿Borrar ' + v.name + ' de la tele?')) return;
-          fetch(base + '/delete?name=' + encodeURIComponent(v.name), { method: 'POST' }).then(loadVideos);
+          post('/delete?name=' + encodeURIComponent(v.name), null, loadVideos).send();
         };
         item.appendChild(name);
         item.appendChild(remove);
@@ -135,6 +193,110 @@
       });
     }).catch(function () {});
   }
+
+  // ---------- Apps ----------
+  function loadApps() {
+    fetch(base + '/apps').then(function (r) { return r.json(); }).then(function (apps) {
+      var container = document.getElementById('appList');
+      container.innerHTML = '';
+      apps.forEach(function (app) { container.appendChild(appCard(app)); });
+    }).catch(function () {});
+  }
+
+  function appCard(app) {
+    var card = document.createElement('div');
+    card.className = 'app';
+
+    var title = document.createElement('div');
+    title.className = 'title';
+    var original = document.createElement('span');
+    original.textContent = app.original;
+    var badge = document.createElement('span');
+    badge.textContent = app.hasCover ? 'Portada propia' : '';
+    title.appendChild(original);
+    title.appendChild(badge);
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.maxLength = 40;
+    input.placeholder = app.original;
+    input.value = app.name;
+
+    var status = document.createElement('div');
+    status.className = 'status';
+
+    var row = document.createElement('div');
+    row.className = 'row';
+
+    var save = document.createElement('button');
+    save.className = 'small primary';
+    save.textContent = 'Guardar nombre';
+    save.onclick = function () {
+      post('/rename?package=' + encodeURIComponent(app.package) + '&name=' + encodeURIComponent(input.value), null, function (ok) {
+        setStatus(status, ok ? (input.value.trim() ? 'Nombre guardado.' : 'Volvió al nombre original.') : 'No se pudo guardar.', ok ? 'ok' : 'err');
+      }).send();
+    };
+
+    var pickId = 'cover-' + app.package.replace(/[^a-z0-9]/gi, '-');
+    var pick = document.createElement('label');
+    pick.className = 'small';
+    pick.style.cssText = 'border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer';
+    pick.textContent = 'Cambiar portada';
+    pick.htmlFor = pickId;
+    var file = document.createElement('input');
+    file.type = 'file';
+    file.accept = 'image/*';
+    file.id = pickId;
+    file.onchange = function () {
+      var image = file.files[0];
+      file.value = '';
+      if (!image) return;
+      if (image.size > MAX_IMAGE) { setStatus(status, 'La imagen pesa más de 10 MB.', 'err'); return; }
+      setStatus(status, 'Subiendo portada…');
+      post('/cover?package=' + encodeURIComponent(app.package), null, function (ok, reply) {
+        setStatus(status, ok ? '¡Portada lista!' : (reply.message || 'No se pudo subir la portada.'), ok ? 'ok' : 'err');
+        if (ok) { badge.textContent = 'Portada propia'; reset.style.display = ''; }
+      }).send(image);
+    };
+
+    var reset = document.createElement('button');
+    reset.className = 'small danger';
+    reset.textContent = 'Quitar portada';
+    reset.style.display = app.hasCover ? '' : 'none';
+    reset.onclick = function () {
+      post('/cover/reset?package=' + encodeURIComponent(app.package), null, function (ok) {
+        if (ok) { badge.textContent = ''; reset.style.display = 'none'; setStatus(status, 'Volvió la portada original.', 'ok'); }
+      }).send();
+    };
+
+    row.appendChild(save);
+    row.appendChild(pick);
+    row.appendChild(file);
+    row.appendChild(reset);
+    card.appendChild(title);
+    card.appendChild(input);
+    card.appendChild(row);
+    card.appendChild(status);
+    return card;
+  }
+
+  // ---------- Protector ----------
+  var message = document.getElementById('message');
+  var messageStatus = document.getElementById('messageStatus');
+  message.addEventListener('input', function () { document.getElementById('messageCount').textContent = message.value.length; });
+
+  function loadMessage() {
+    fetch(base + '/message').then(function (r) { return r.json(); }).then(function (m) {
+      message.value = m.text || '';
+      document.getElementById('messageCount').textContent = message.value.length;
+    }).catch(function () {});
+  }
+
+  document.getElementById('saveMessage').onclick = function () {
+    post('/message?text=' + encodeURIComponent(message.value), null, function (ok) {
+      setStatus(messageStatus, ok ? (message.value.trim() ? 'Guardado. Lo vas a ver en el protector.' : 'Listo: el protector no muestra mensaje.') : 'No se pudo guardar.', ok ? 'ok' : 'err');
+    }).send();
+  };
 
   loadVideos();
 </script>

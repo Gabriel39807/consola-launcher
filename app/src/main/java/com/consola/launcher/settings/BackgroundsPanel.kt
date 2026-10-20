@@ -1,5 +1,11 @@
 package com.consola.launcher.settings
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.lazy.LazyColumn
+import com.consola.launcher.audio.AudioPulse
+import com.consola.launcher.ui.tvClickable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -55,32 +61,89 @@ private val ErrorColor = Color(0xFFFF6B6B)
 private val SuccessColor = Color(0xFF2ECC71)
 private val ActiveBadge = Color(0xFF3D5AFE)
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BackgroundsPanel(
     backgrounds: List<BackgroundCard>,
     upload: UploadUiState,
+    tuning: BackgroundTuning,
+    audioStatus: AudioPulse.Status,
+    hasAudioPermission: () -> Boolean,
     onSelect: (BackgroundChoice) -> Unit,
-    onShown: () -> Unit,
-    onHidden: () -> Unit,
+    onTuningChange: ((BackgroundTuning) -> BackgroundTuning) -> Unit,
+    onCycleDayNight: (String) -> Unit,
 ) {
-    val currentOnShown by rememberUpdatedState(onShown)
-    val currentOnHidden by rememberUpdatedState(onHidden)
-    // El servidor vive SOLO mientras este panel está en pantalla: nada de puertos abiertos de más en tu red.
-    DisposableEffect(Unit) {
-        currentOnShown()
-        onDispose { currentOnHidden() }
+    // El permiso se pide recién al activar "que baile": nadie ve un pedido de micrófono sin saber para qué es.
+    val askMicrophone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) onTuningChange { it.copy(musicReactive = true) }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        UploadCard(upload)
-        Spacer(Modifier.height(24.dp))
-        PanelTitle(stringResource(R.string.bg_yours))
-        BackgroundRow(backgrounds, onSelect)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().focusRestorer(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(bottom = 16.dp),
+    ) {
+        item { UploadCard(upload) }
+        item {
+            Spacer(Modifier.height(16.dp))
+            PanelTitle(stringResource(R.string.bg_yours))
+            BackgroundRow(backgrounds, tuning, onSelect, onCycleDayNight)
+        }
+        item { PanelTitle(stringResource(R.string.bg_settings), Modifier.padding(top = 8.dp)) }
+        item {
+            SettingsRow(
+                title = stringResource(R.string.bg_rotation),
+                description = if (tuning.rotation == Rotation.DayNight) stringResource(R.string.bg_rotation_daynight_hint) else null,
+                value = stringResource(tuning.rotation.label),
+                onClick = { onTuningChange { it.copy(rotation = it.rotation.next()) } },
+            )
+        }
+        item {
+            SettingsRow(
+                title = stringResource(R.string.bg_dim),
+                value = stringResource(tuning.dim.label),
+                onClick = { onTuningChange { it.copy(dim = it.dim.next()) } },
+            )
+        }
+        item {
+            SettingsRow(
+                title = stringResource(R.string.bg_music),
+                description = stringResource(
+                    if (audioStatus == AudioPulse.Status.Unavailable) R.string.bg_music_unavailable else R.string.bg_music_desc,
+                ),
+                switchState = tuning.musicReactive,
+                onClick = {
+                    when {
+                        tuning.musicReactive -> onTuningChange { it.copy(musicReactive = false) }
+                        hasAudioPermission() -> onTuningChange { it.copy(musicReactive = true) }
+                        else -> askMicrophone.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                },
+            )
+        }
     }
 }
 
+private val Rotation.label: Int
+    get() = when (this) {
+        Rotation.Off -> R.string.rotation_off
+        Rotation.Every15 -> R.string.rotation_15
+        Rotation.Every30 -> R.string.rotation_30
+        Rotation.Every60 -> R.string.rotation_60
+        Rotation.DayNight -> R.string.rotation_day_night
+    }
+
+private val DimLevel.label: Int
+    get() = when (this) {
+        DimLevel.None -> R.string.dim_none
+        DimLevel.Low -> R.string.dim_low
+        DimLevel.Medium -> R.string.dim_medium
+        DimLevel.High -> R.string.dim_high
+    }
+
+/** El QR para personalizar desde el celular (fondos, nombres y portadas de apps, mensaje del protector). */
 @Composable
-private fun UploadCard(upload: UploadUiState) {
+internal fun UploadCard(upload: UploadUiState) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -133,20 +196,37 @@ private fun StatusLine(status: UploadStatus) {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun BackgroundRow(backgrounds: List<BackgroundCard>, onSelect: (BackgroundChoice) -> Unit) {
+private fun BackgroundRow(
+    backgrounds: List<BackgroundCard>,
+    tuning: BackgroundTuning,
+    onSelect: (BackgroundChoice) -> Unit,
+    onCycleDayNight: (String) -> Unit,
+) {
     LazyRow(
         modifier = Modifier.focusRestorer(),
         contentPadding = PaddingValues(vertical = 8.dp, horizontal = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         items(backgrounds, key = { it.fileName ?: "aurora" }) { card ->
-            BackgroundCardView(card, onClick = { onSelect(card.choice) })
+            val tag = when (card.fileName) {
+                null -> null
+                tuning.dayVideo -> R.string.tag_day
+                tuning.nightVideo -> R.string.tag_night
+                else -> null
+            }
+            BackgroundCardView(
+                card = card,
+                tag = tag,
+                onClick = { onSelect(card.choice) },
+                // Mantener OK sobre un video lo marca para el día o la noche (la aurora no se marca).
+                onLongClick = card.fileName?.let { name -> { onCycleDayNight(name) } },
+            )
         }
     }
 }
 
 @Composable
-private fun BackgroundCardView(card: BackgroundCard, onClick: () -> Unit) {
+private fun BackgroundCardView(card: BackgroundCard, tag: Int?, onClick: () -> Unit, onLongClick: (() -> Unit)?) {
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(if (isFocused) 1.08f else 1f, label = "backgroundScale")
 
@@ -162,7 +242,7 @@ private fun BackgroundCardView(card: BackgroundCard, onClick: () -> Unit) {
                 .background(Color(0xFF1C2130))
                 .then(if (isFocused) Modifier.border(3.dp, Color.White, CardShape) else Modifier)
                 .onFocusChanged { isFocused = it.isFocused }
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick),
+                .tvClickable(onClick = onClick, onLongClick = onLongClick),
         ) {
             when {
                 card.thumbnail != null -> Image(
@@ -176,6 +256,20 @@ private fun BackgroundCardView(card: BackgroundCard, onClick: () -> Unit) {
                     Modifier
                         .fillMaxSize()
                         .background(Brush.linearGradient(listOf(Color(0xFF2E4BFF), Color(0xFF5B2BBF), Color(0xFF00BFA5)))),
+                )
+            }
+            tag?.let {
+                Text(
+                    text = stringResource(it),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(6.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(0xFFFFC107))
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
                 )
             }
             if (card.isActive) {

@@ -4,4 +4,5 @@ package com.consola.launcher.apps
 data class InstalledApp(
     val packageName: String,
     val label: String,
+    val category: AppCategory = AppCategory.Other,
 )

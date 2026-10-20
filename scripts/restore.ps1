@@ -35,6 +35,9 @@ if ($PSCmdlet.ShouldProcess('screensaver_components', 'protector de fábrica')) 
         Write-Host "Protector de pantalla: el de fábrica" -ForegroundColor Green
     }
 }
+if ((Test-PackageInstalled $LauncherPackage) -and $PSCmdlet.ShouldProcess($MediaListenerComponent, 'cmd notification disallow_listener')) {
+    Invoke-Adb shell cmd notification disallow_listener $MediaListenerComponent | Out-Null
+}
 if ((Test-PackageInstalled $LauncherPackage) -and $PSCmdlet.ShouldProcess($LauncherPackage, 'pm revoke WRITE_SECURE_SETTINGS')) {
     Invoke-Adb shell pm revoke $LauncherPackage android.permission.WRITE_SECURE_SETTINGS | Out-Null
 }

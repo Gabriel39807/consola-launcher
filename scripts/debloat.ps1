@@ -57,6 +57,11 @@ if ($PSCmdlet.ShouldProcess($LauncherPackage, 'pm grant WRITE_SECURE_SETTINGS'))
     Invoke-Adb shell pm grant $LauncherPackage android.permission.WRITE_SECURE_SETTINGS | Out-Null
     Write-Host "Permiso para elegir el protector de pantalla: concedido" -ForegroundColor Green
 }
+# El widget "Reproduciendo ahora" necesita ver las sesiones de medios (también se puede dar desde la tele).
+if ($PSCmdlet.ShouldProcess($MediaListenerComponent, 'cmd notification allow_listener')) {
+    Invoke-Adb shell cmd notification allow_listener $MediaListenerComponent | Out-Null
+    Write-Host "Widget de música: habilitado" -ForegroundColor Green
+}
 if (-not $KeepGoogleScreensaver -and $PSCmdlet.ShouldProcess($DreamComponent, 'protector de pantalla')) {
     Invoke-Adb shell settings put secure screensaver_components $DreamComponent | Out-Null
     Write-Host "Protector de pantalla: tu fondo con la hora" -ForegroundColor Green

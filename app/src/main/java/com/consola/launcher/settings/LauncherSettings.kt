@@ -16,6 +16,16 @@ data class LauncherSettings(
     val favorites: List<String>,
     val hidden: Set<String>,
     val background: BackgroundChoice?,
+    val layout: HomeLayout = HomeLayout.Cinema,
+    val clock: ClockStyle = ClockStyle(),
+    val widgets: WidgetSettings = WidgetSettings(),
+    val tuning: BackgroundTuning = BackgroundTuning(),
+    val font: FontChoice = FontChoice.System,
+    /** Nombres propios por paquete ("Netflix" → "Pelis"). Las portadas propias viven como archivos. */
+    val customNames: Map<String, String> = emptyMap(),
+    /** Texto que muestra el protector de pantalla debajo de la hora. Vacío = nada. */
+    val dreamMessage: String = "",
+    val savedThemes: List<Theme> = emptyList(),
 ) {
     // Favorita y oculta a la vez no tiene sentido: marcar una cosa desmarca la otra.
     fun toggleFavorite(packageName: String): LauncherSettings =

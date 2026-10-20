@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,7 +40,11 @@ import com.consola.launcher.R
 import com.consola.launcher.ui.TvSafeArea
 
 enum class SettingsSection(@StringRes val label: Int) {
+    Style(R.string.settings_style),
+    Themes(R.string.settings_themes),
     Backgrounds(R.string.settings_backgrounds),
+    Clock(R.string.settings_clock),
+    Widgets(R.string.settings_widgets),
     Apps(R.string.settings_apps),
     System(R.string.settings_system),
 }
@@ -48,7 +53,15 @@ enum class SettingsSection(@StringRes val label: Int) {
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var section by rememberSaveable { mutableStateOf(SettingsSection.Backgrounds) }
+    val audioStatus by viewModel.audioStatus.collectAsStateWithLifecycle()
+    var section by rememberSaveable { mutableStateOf(SettingsSection.Style) }
+
+    // El servidor para el celular vive mientras estés en Ajustes (en cualquier sección) y se cierra al salir:
+    // nada de puertos abiertos de más en tu red, pero tampoco tenés que ir a Fondos para cambiar el nombre de una app.
+    DisposableEffect(viewModel) {
+        viewModel.startUploads()
+        onDispose { viewModel.stopUploads() }
+    }
 
     Row(
         Modifier
@@ -59,15 +72,32 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
         Spacer(Modifier.width(40.dp))
         Box(Modifier.weight(1f).fillMaxHeight()) {
             when (section) {
+                SettingsSection.Style -> StylePanel(current = state.settings.layout, onSelect = viewModel::setLayout)
+                SettingsSection.Themes -> {
+                    val prefix = stringResource(R.string.theme_my_prefix)
+                    ThemesPanel(
+                        settings = state.settings,
+                        onApply = viewModel::applyTheme,
+                        onSaveCurrent = { viewModel.saveCurrentAsTheme(prefix) },
+                        onDelete = viewModel::deleteTheme,
+                        onFont = viewModel::setFont,
+                    )
+                }
+                SettingsSection.Clock -> ClockPanel(style = state.settings.clock, onChange = viewModel::updateClock)
+                SettingsSection.Widgets -> WidgetsPanel(widgets = state.settings.widgets, onChange = viewModel::updateWidgets)
                 SettingsSection.Backgrounds -> BackgroundsPanel(
                     backgrounds = state.backgrounds,
                     upload = state.upload,
+                    tuning = state.settings.tuning,
+                    audioStatus = audioStatus,
+                    hasAudioPermission = viewModel::hasAudioPermission,
                     onSelect = viewModel::selectBackground,
-                    onShown = viewModel::startUploads,
-                    onHidden = viewModel::stopUploads,
+                    onTuningChange = viewModel::updateTuning,
+                    onCycleDayNight = viewModel::cycleDayNight,
                 )
                 SettingsSection.Apps -> AppsPanel(
                     rows = state.apps,
+                    upload = state.upload,
                     onToggleFavorite = viewModel::toggleFavorite,
                     onToggleHidden = viewModel::toggleHidden,
                 )

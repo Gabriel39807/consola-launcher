@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -36,6 +37,7 @@ data class SettingsUiState(
     val apps: List<AppSettingRow> = emptyList(),
     val backgrounds: List<BackgroundCard> = emptyList(),
     val upload: UploadUiState = UploadUiState(),
+    val settings: LauncherSettings = LauncherSettings.Default,
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -50,6 +52,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 apps = appRows(apps, settings),
                 backgrounds = backgroundCards(settings, videos, thumbs),
                 upload = upload,
+                settings = settings,
             )
         }
             .flowOn(Dispatchers.Default)
@@ -59,6 +62,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             installed.value = graph.apps.loadAll()
             graph.backgrounds.rescan()
+        }
+        // Portadas nuevas desde el celular: recargamos para verlas también en Ajustes → Apps del inicio.
+        viewModelScope.launch(Dispatchers.IO) {
+            graph.covers.version.drop(1).collect { installed.value = graph.apps.loadAll() }
         }
         // Cada vez que cambia la lista de videos (subiste o borraste uno), sacamos las fotos que falten.
         viewModelScope.launch(Dispatchers.IO) {
@@ -77,6 +84,56 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun toggleHidden(packageName: String) {
         viewModelScope.launch { graph.settings.update { it.toggleHidden(packageName) } }
+    }
+
+    fun setLayout(layout: HomeLayout) {
+        viewModelScope.launch { graph.settings.update { it.copy(layout = layout) } }
+    }
+
+    fun updateClock(change: (ClockStyle) -> ClockStyle) {
+        viewModelScope.launch { graph.settings.update { it.copy(clock = change(it.clock)) } }
+    }
+
+    fun updateWidgets(change: (WidgetSettings) -> WidgetSettings) {
+        viewModelScope.launch { graph.settings.update { it.copy(widgets = change(it.widgets)) } }
+    }
+
+    // ---------- Fondos vivos ----------
+
+    /** Estado del analizador de audio (para avisar si esta tele no deja usarlo). */
+    val audioStatus = graph.audioPulse.status
+
+    fun hasAudioPermission(): Boolean = graph.audioPulse.hasPermission()
+
+    fun updateTuning(change: (BackgroundTuning) -> BackgroundTuning) {
+        viewModelScope.launch { graph.settings.update { it.copy(tuning = change(it.tuning)) } }
+    }
+
+    fun cycleDayNight(fileName: String) = updateTuning { it.cycleDayNight(fileName) }
+
+    // ---------- Temas y letras ----------
+
+    fun setFont(font: FontChoice) {
+        viewModelScope.launch { graph.settings.update { it.copy(font = font) } }
+    }
+
+    fun applyTheme(theme: Theme) {
+        viewModelScope.launch { graph.settings.update(theme::applyTo) }
+    }
+
+    /** Guarda lo que tenés puesto como un tema propio ("Mi tema 1", "Mi tema 2"...). */
+    fun saveCurrentAsTheme(namePrefix: String) {
+        viewModelScope.launch {
+            graph.settings.update { settings ->
+                val number = (settings.savedThemes.size + 1)
+                val theme = Theme.from(settings, id = "mio-${System.currentTimeMillis()}", name = "$namePrefix $number")
+                settings.copy(savedThemes = settings.savedThemes + theme)
+            }
+        }
+    }
+
+    fun deleteTheme(theme: Theme) {
+        viewModelScope.launch { graph.settings.update { it.copy(savedThemes = it.savedThemes - theme) } }
     }
 
     fun selectBackground(choice: BackgroundChoice) {
@@ -103,7 +160,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             .map { app ->
                 val visuals = byPackage.getValue(app.packageName).visuals
                 AppSettingRow(
-                    tile = HomeTile(app.packageName, app.label, visuals.artwork, visuals.accentArgb, app.packageName in settings.favorites),
+                    tile = HomeTile(
+                        packageName = app.packageName,
+                        label = settings.customNames[app.packageName] ?: app.label,
+                        artwork = visuals.artwork,
+                        accentArgb = visuals.accentArgb,
+                        isFavorite = app.packageName in settings.favorites,
+                    ),
                     isHidden = app.packageName in settings.hidden,
                 )
             }

@@ -4,10 +4,12 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,23 +29,64 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.consola.launcher.R
+import com.consola.launcher.ui.TvSafeArea
 
 /**
  * La búsqueda la hace Google (su Asistente sigue instalado aunque saquemos su inicio).
- * Nosotros ponemos la puerta de entrada; reinventar un buscador de películas no tiene sentido.
+ * Nosotros ponemos la puerta de entrada y ejemplos de qué se le puede pedir.
  */
 @Composable
 fun SearchTab(onSearch: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(bottom = 48.dp),
-        contentAlignment = Alignment.Center,
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = TvSafeArea.Horizontal).padding(bottom = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
+        Text(stringResource(R.string.search_title), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = stringResource(R.string.search_hint),
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color.White.copy(alpha = 0.75f),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(28.dp))
         SearchButton(onClick = onSearch)
+        Spacer(Modifier.height(32.dp))
+        Text(
+            text = stringResource(R.string.search_examples_title).uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            letterSpacing = 3.sp,
+            color = Color.White.copy(alpha = 0.55f),
+        )
+        Spacer(Modifier.height(10.dp))
+        // Ejemplos, no botones: ayudan a quien no sabe qué se le puede pedir a la búsqueda por voz.
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf(R.string.search_example_1, R.string.search_example_2, R.string.search_example_3).forEach { example ->
+                Text(
+                    text = stringResource(example),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.White.copy(alpha = 0.1f))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+        Text(
+            text = stringResource(R.string.search_remote_tip),
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.55f),
+        )
     }
 }
 

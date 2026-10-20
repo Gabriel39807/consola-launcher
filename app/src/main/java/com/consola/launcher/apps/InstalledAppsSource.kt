@@ -2,8 +2,10 @@ package com.consola.launcher.apps
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
@@ -14,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Adaptador hacia el PackageManager: traduce "lo que Android tiene instalado" a nuestro modelo.
  * Solo ve las apps con LEANBACK_LAUNCHER gracias al bloque <queries> del manifest.
  */
-class InstalledAppsSource(context: Context) {
+class InstalledAppsSource(context: Context, private val covers: CoverStore) {
 
     private val packageManager = context.packageManager
     private val visualsCache = ConcurrentHashMap<String, AppVisuals>()
@@ -22,9 +24,13 @@ class InstalledAppsSource(context: Context) {
     fun installedApps(): List<InstalledApp> {
         val tvApps = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
         return packageManager.queryIntentActivities(tvApps, 0).map { info ->
+            val appInfo = info.activityInfo.applicationInfo
+            @Suppress("DEPRECATION") // FLAG_IS_GAME: los juegos viejos solo marcan esto, sin categoría.
+            val declared = AppCategory.fromAndroid(appInfo.category, isGameFlag = appInfo.flags and ApplicationInfo.FLAG_IS_GAME != 0)
             InstalledApp(
                 packageName = info.activityInfo.packageName,
                 label = info.loadLabel(packageManager).toString(),
+                category = AppCategory.forPackage(info.activityInfo.packageName, declared),
             )
         }
     }
@@ -35,8 +41,18 @@ class InstalledAppsSource(context: Context) {
             .distinctBy { it.packageName }
             .map { LoadedApp(it, visualsFor(it.packageName)) }
 
-    fun visualsFor(packageName: String): AppVisuals =
-        visualsCache.getOrPut(packageName) { loadVisuals(packageName) }
+    fun visualsFor(packageName: String): AppVisuals {
+        // Tu portada (subida desde el celular) manda sobre el banner de la app. La fecha del archivo va en la
+        // clave: si la cambiás, la clave cambia y se vuelve a leer.
+        val cover = covers.fileFor(packageName)
+        val key = if (cover != null) "$packageName@${cover.lastModified()}" else packageName
+        return visualsCache.getOrPut(key) {
+            cover?.let(::loadCover) ?: loadVisuals(packageName)
+        }
+    }
+
+    private fun loadCover(file: java.io.File): AppVisuals? =
+        BitmapFactory.decodeFile(file.absolutePath)?.let { AppVisuals(AppArtwork.Banner(it.asImageBitmap()), accentOf(it)) }
 
     private fun loadVisuals(packageName: String): AppVisuals = try {
         val banner = activityBanner(packageName) ?: packageManager.getApplicationBanner(packageName)

@@ -3,6 +3,10 @@ package com.consola.launcher.upload
 import android.content.Context
 import androidx.compose.ui.graphics.ImageBitmap
 import com.consola.launcher.R
+import com.consola.launcher.apps.CoverStore
+import com.consola.launcher.apps.InstalledApp
+import com.consola.launcher.apps.InstalledAppsSource
+import com.consola.launcher.settings.LauncherSettings
 import com.consola.launcher.background.BackgroundCatalog
 import com.consola.launcher.background.BackgroundLibrary
 import com.consola.launcher.settings.BackgroundChoice
@@ -49,6 +53,8 @@ class BackgroundUploads(
     context: Context,
     private val library: BackgroundLibrary,
     private val settings: SettingsRepository,
+    private val apps: InstalledAppsSource,
+    private val covers: CoverStore,
     private val scope: CoroutineScope,
 ) : UploadHandler {
 
@@ -60,12 +66,12 @@ class BackgroundUploads(
     private val _state = MutableStateFlow(UploadUiState())
     val state: StateFlow<UploadUiState> = _state.asStateFlow()
 
-    // El servidor corre en sus propios hilos: le dejamos a mano el último fondo elegido en vez de bloquear esperando un Flow.
+    // El servidor corre en sus propios hilos: le dejamos a mano los últimos ajustes en vez de bloquear esperando un Flow.
     @Volatile
-    private var currentChoice: BackgroundChoice? = null
+    private var current: LauncherSettings = LauncherSettings.Default
 
     init {
-        scope.launch { settings.settings.collect { currentChoice = it.background } }
+        scope.launch { settings.settings.collect { current = it } }
     }
 
     private val page: String by lazy {
@@ -185,13 +191,88 @@ class BackgroundUploads(
 
     override fun videosJson(): String {
         val videos = library.videos.value
-        val active = BackgroundCatalog.resolve(currentChoice, videos)
+        val active = BackgroundCatalog.resolve(current.background, videos)
         val list = JSONArray()
         videos.forEach { name -> list.put(JSONObject().put("name", name).put("active", name == active)) }
         return list.toString()
     }
 
     override fun delete(name: String): Boolean = library.delete(name)
+
+    // ---------- Apps a tu gusto ----------
+
+    /** Solo se pueden personalizar apps que están instaladas: un paquete inventado no llega a ningún lado. */
+    private fun installedApp(packageName: String): InstalledApp? =
+        apps.installedApps().firstOrNull { it.packageName == packageName && it.packageName != appContext.packageName }
+
+    override fun appsJson(): String {
+        val names = current.customNames
+        val list = JSONArray()
+        apps.installedApps()
+            .filter { it.packageName != appContext.packageName }
+            .distinctBy { it.packageName }
+            .sortedBy { (names[it.packageName] ?: it.label).lowercase() }
+            .forEach { app ->
+                list.put(
+                    JSONObject()
+                        .put("package", app.packageName)
+                        .put("original", app.label)
+                        .put("name", names[app.packageName] ?: "")
+                        .put("hasCover", covers.fileFor(app.packageName) != null),
+                )
+            }
+        return list.toString()
+    }
+
+    override fun rename(packageName: String, name: String): Boolean {
+        installedApp(packageName) ?: return false
+        val clean = UploadRules.cleanText(name, UploadRules.MAX_NAME_LENGTH)
+        scope.launch {
+            settings.update { s ->
+                // Vacío = volver al nombre original de la app.
+                s.copy(customNames = if (clean.isEmpty()) s.customNames - packageName else s.customNames + (packageName to clean))
+            }
+        }
+        return true
+    }
+
+    override fun saveCover(packageName: String, length: Long, body: InputStream): UploadReply {
+        installedApp(packageName) ?: return UploadReply.Rejected("Esa app no está en la tele")
+        if (length <= 0 || length > UploadRules.MAX_COVER_BYTES) return UploadReply.Rejected("La imagen tiene que pesar menos de 10 MB")
+        val bytes = try {
+            readExactly(body, length.toInt())
+        } catch (e: IOException) {
+            return UploadReply.Rejected("Se cortó la subida. Probá de nuevo.")
+        }
+        return if (covers.save(packageName, bytes)) UploadReply.Accepted else UploadReply.Rejected("Ese archivo no es una imagen")
+    }
+
+    override fun resetCover(packageName: String): Boolean {
+        installedApp(packageName) ?: return false
+        covers.delete(packageName)
+        return true
+    }
+
+    // ---------- Mensaje del protector ----------
+
+    override fun messageJson(): String = JSONObject().put("text", current.dreamMessage).toString()
+
+    override fun setMessage(text: String): Boolean {
+        val clean = UploadRules.cleanText(text, UploadRules.MAX_MESSAGE_LENGTH)
+        scope.launch { settings.update { it.copy(dreamMessage = clean) } }
+        return true
+    }
+
+    private fun readExactly(input: InputStream, length: Int): ByteArray {
+        val bytes = ByteArray(length)
+        var read = 0
+        while (read < length) {
+            val count = input.read(bytes, read, length - read)
+            if (count < 0) throw IOException("El celular cortó la conexión")
+            read += count
+        }
+        return bytes
+    }
 
     private fun setStatus(status: UploadStatus) = _state.update { it.copy(status = status) }
 

@@ -34,4 +34,15 @@ object UploadRules {
         }
         return candidate
     }
+
+    const val MAX_NAME_LENGTH = 40
+    const val MAX_MESSAGE_LENGTH = 120
+    const val MAX_COVER_BYTES = 10L * 1024 * 1024
+
+    private val CONTROL_CHARS = Regex("\\p{Cntrl}+")
+    private val SPACES = Regex(" {2,}")
+
+    /** Nombres y mensajes que llegan del celular: sin caracteres de control, sin espacios de más y con un largo máximo. */
+    fun cleanText(raw: String, maxLength: Int): String =
+        raw.replace(CONTROL_CHARS, " ").replace(SPACES, " ").trim().take(maxLength).trim()
 }

@@ -23,6 +23,10 @@ object SystemActions {
     fun openGoogleSearch(context: Context) =
         launch(context, Intent(Intent.ACTION_ASSIST), context.getString(R.string.search_unavailable))
 
+    /** La pantalla de la tele para dar "acceso a notificaciones" (lo necesita el widget de música). */
+    fun openNotificationAccess(context: Context) =
+        launch(context, Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS), context.getString(R.string.open_failed, context.getString(R.string.tv_settings)))
+
     fun openTvSettings(context: Context) =
         launch(context, Intent(Settings.ACTION_SETTINGS), context.getString(R.string.open_failed, context.getString(R.string.tv_settings)))
 

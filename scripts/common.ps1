@@ -4,6 +4,7 @@
 $LauncherPackage = 'com.consola.launcher'
 $LauncherComponent = "$LauncherPackage/.MainActivity"
 $DreamComponent = "$LauncherPackage/.dream.BackgroundDream"
+$MediaListenerComponent = "$LauncherPackage/com.consola.launcher.widgets.MediaListener"
 
 # Paquetes que se pueden desactivar. TODOS son reversibles con restore.ps1.
 $GoogleHome = 'com.google.android.apps.tv.launcherx'        # El inicio de Google TV: recomendaciones y publicidad

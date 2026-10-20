@@ -132,13 +132,9 @@ Y ahora sí:
 powershell -ExecutionPolicy Bypass -File .\debloat.ps1 -Device 192.168.1.50:5555
 ```
 
-Apretá Home. ¿Abre Consola? Listo, ya está.
+Apretá Home: abre Consola. Y al prender la tele también arranca Consola, porque es el único inicio que queda.
 
-**¿Te sigue llevando a una pantalla de Google?** Algunos firmwares mandan el Home a otra pantalla cuando falta el inicio de Google. Probá:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .\debloat.ps1 -Device 192.168.1.50:5555 -IncludeSetupWraith
-```
+> **Por qué a veces hay que sacar dos cosas de Google:** Android elige el Home por *prioridad* antes que por preferencia. En muchas teles el asistente de configuración de Google (`setupwraith`, prioridad 1) le gana a cualquier launcher instalado (prioridad 0). El script lo detecta: si después de sacar el inicio de Google el Home cae en el asistente, lo desactiva también. Con `-IncludeSetupWraith` lo forzás.
 
 > ⚠️ Después de hacer esto, probá que el botón de **entradas/HDMI** del control siga funcionando. En algunas teles con Google TV, el selector de entradas vive dentro del inicio de Google.
 

@@ -16,7 +16,7 @@
 param(
     [Parameter(Mandatory)] [string] $Device,
 
-    # Usalo SOLO si después de la primera pasada el botón Home te sigue llevando a una pantalla de Google.
+    # Ya no hace falta: el script lo detecta solo. Queda para forzarlo.
     [switch] $IncludeSetupWraith,
 
     # Desactiva el protector de pantalla de Google (el que muestra recomendaciones).
@@ -48,6 +48,17 @@ foreach ($package in $targets) {
     if ($PSCmdlet.ShouldProcess($package, 'pm disable-user')) {
         Invoke-Adb shell pm disable-user '--user' 0 $package | Out-Null
         Write-Host "Desactivado: $package" -ForegroundColor Green
+    }
+}
+
+# Android elige el Home por PRIORIDAD antes que por preferencia: el asistente de configuración de Google
+# (prioridad 1) le gana a Consola (0) aunque se lo marque como preferido. Si después de sacar el inicio de
+# Google el Home cae ahí, lo desactivamos también, sin que haya que adivinar el parámetro.
+if (-not $IncludeSetupWraith -and -not $WhatIfPreference) {
+    $resolved = Invoke-Adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
+    if ((@($resolved) -join "`n") -match [regex]::Escape($SetupWraith)) {
+        Invoke-Adb shell pm disable-user '--user' 0 $SetupWraith | Out-Null
+        Write-Host "Desactivado: $SetupWraith (el Home caía en el asistente de configuración)" -ForegroundColor Green
     }
 }
 

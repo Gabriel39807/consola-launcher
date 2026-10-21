@@ -14,6 +14,9 @@ import com.consola.launcher.widgets.NowPlayingSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
  * Inyección de dependencias a mano: UNA instancia de cada cosa para toda la app.
@@ -36,4 +39,11 @@ class LauncherGraph(context: Context) {
     val screensaver = ScreensaverSetting(appContext)
     val nowPlaying = NowPlayingSource(appContext)
     val audioPulse = AudioPulse(appContext)
+
+    init {
+        // El widget sigue tu reproductor elegido. En el hilo principal: ahí corre todo NowPlayingSource.
+        appScope.launch(Dispatchers.Main) {
+            settings.settings.map { it.widgets.player.packageName }.distinctUntilChanged().collect { nowPlaying.preferredPackage = it }
+        }
+    }
 }

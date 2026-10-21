@@ -17,7 +17,8 @@ data class Theme(
     fun applyTo(settings: LauncherSettings): LauncherSettings = settings.copy(
         layout = layout,
         clock = clock,
-        widgets = widgets,
+        // El reproductor es tuyo, no del tema: aplicar "Gamer" no te cambia Spotify por YouTube Music.
+        widgets = widgets.copy(player = settings.widgets.player),
         font = font,
         tuning = settings.tuning.copy(dim = dim, musicReactive = musicReactive),
     )

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
@@ -25,6 +26,13 @@ import com.consola.launcher.R
 import com.consola.launcher.home.SystemActions
 import com.consola.launcher.widgets.NowPlayingCard
 import com.consola.launcher.widgets.NowPlayingState
+
+private val PreferredPlayer.label: Int
+    get() = when (this) {
+        PreferredPlayer.Auto -> R.string.player_auto
+        PreferredPlayer.Spotify -> R.string.player_spotify
+        PreferredPlayer.YouTubeMusic -> R.string.player_youtube_music
+    }
 
 @Composable
 fun WidgetsPanel(widgets: WidgetSettings, onChange: ((WidgetSettings) -> WidgetSettings) -> Unit) {
@@ -52,6 +60,15 @@ fun WidgetsPanel(widgets: WidgetSettings, onChange: ((WidgetSettings) -> WidgetS
                 title = stringResource(R.string.widget_now_playing_access),
                 description = stringResource(R.string.widget_now_playing_access_desc),
                 onClick = { SystemActions.openNotificationAccess(context) },
+            )
+        }
+        if (widgets.nowPlaying) {
+            SettingsRow(
+                icon = Icons.Default.Favorite,
+                title = stringResource(R.string.widget_player),
+                description = stringResource(R.string.widget_player_desc),
+                value = stringResource(widgets.player.label),
+                onClick = { onChange { it.copy(player = it.player.next()) } },
             )
         }
         SettingsRow(

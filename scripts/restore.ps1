@@ -38,6 +38,11 @@ if ($PSCmdlet.ShouldProcess('screensaver_components', 'protector de fábrica')) 
 if ((Test-PackageInstalled $LauncherPackage) -and $PSCmdlet.ShouldProcess($MediaListenerComponent, 'cmd notification disallow_listener')) {
     Invoke-Adb shell cmd notification disallow_listener $MediaListenerComponent | Out-Null
 }
+if ($PSCmdlet.ShouldProcess($SettingsKeyComponent, 'desactivar servicio de accesibilidad')) {
+    $services = @(Get-SecureList 'enabled_accessibility_services' | Where-Object { $_ -ne $SettingsKeyComponent })
+    Set-SecureList 'enabled_accessibility_services' $services
+    if ($services.Count -eq 0) { Invoke-Adb shell settings put secure accessibility_enabled 0 | Out-Null }
+}
 if ((Test-PackageInstalled $LauncherPackage) -and $PSCmdlet.ShouldProcess($LauncherPackage, 'pm revoke WRITE_SECURE_SETTINGS')) {
     Invoke-Adb shell pm revoke $LauncherPackage android.permission.WRITE_SECURE_SETTINGS | Out-Null
 }

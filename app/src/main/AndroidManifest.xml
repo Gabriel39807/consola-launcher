@@ -40,6 +40,16 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
         </intent>
+        <!-- Las pantallas del panel de ajustes rápidos (QuickActions): sin esto, no sabríamos si existen. -->
+        <intent><action android:name="com.android.tv.action.VIEW_INPUTS" /></intent>
+        <intent><action android:name="android.settings.DISPLAY_SETTINGS" /></intent>
+        <intent><action android:name="android.settings.SOUND_SETTINGS" /></intent>
+        <intent><action android:name="android.settings.WIFI_SETTINGS" /></intent>
+        <intent><action android:name="android.settings.oem.TIMER_SETTINGS" /></intent>
+        <intent><action android:name="com.google.android.pano.action.SLEEP" /></intent>
+        <intent><action android:name="com.google.android.intent.action.CONNECT_INPUT" /></intent>
+        <intent><action android:name="android.settings.ACCESSIBILITY_SETTINGS" /></intent>
+        <intent><action android:name="android.settings.SETTINGS" /></intent>
     </queries>
 
     <application
@@ -85,6 +95,20 @@
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
+        </service>
+
+        <!-- El botón Ajustes del control: sin el inicio de Google, nadie lo atendía. Ver SettingsKeyService. -->
+        <service
+            android:name=".keys.SettingsKeyService"
+            android:exported="true"
+            android:label="@string/settings_key_service_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/settings_key_service" />
         </service>
 
         <!-- El protector de pantalla: tu fondo con la hora. -->

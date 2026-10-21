@@ -73,9 +73,26 @@ if ($PSCmdlet.ShouldProcess($MediaListenerComponent, 'cmd notification allow_lis
     Invoke-Adb shell cmd notification allow_listener $MediaListenerComponent | Out-Null
     Write-Host "Widget de música: habilitado" -ForegroundColor Green
 }
+# El botón Ajustes del control abría un panel que vive dentro del inicio de Google. Sin él, no hacía nada:
+# este servicio de Consola lo atrapa y abre los ajustes de la tele.
+if ($PSCmdlet.ShouldProcess($SettingsKeyComponent, 'activar servicio de accesibilidad')) {
+    $services = Get-SecureList 'enabled_accessibility_services'
+    if ($services -notcontains $SettingsKeyComponent) {
+        Set-SecureList 'enabled_accessibility_services' ($services + $SettingsKeyComponent)
+    }
+    Invoke-Adb shell settings put secure accessibility_enabled 1 | Out-Null
+    Write-Host "Botón Ajustes del control: habilitado" -ForegroundColor Green
+}
 if (-not $KeepGoogleScreensaver -and $PSCmdlet.ShouldProcess($DreamComponent, 'protector de pantalla')) {
     Invoke-Adb shell settings put secure screensaver_components $DreamComponent | Out-Null
     Write-Host "Protector de pantalla: tu fondo con la hora" -ForegroundColor Green
+}
+
+# Compila Consola por adelantado: sin esto, las primeras veces Android la interpreta y el panel y las
+# animaciones se sienten trabados hasta que "entra en calor".
+if ($PSCmdlet.ShouldProcess($LauncherPackage, 'cmd package compile -m speed')) {
+    Invoke-Adb shell cmd package compile -m speed -f $LauncherPackage | Out-Null
+    Write-Host "Consola compilada para que vaya fluida" -ForegroundColor Green
 }
 
 if ($PSCmdlet.ShouldProcess($LauncherComponent, 'cmd package set-home-activity')) {

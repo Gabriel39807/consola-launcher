@@ -64,7 +64,7 @@ private val NeutralCard = Color(0xFF1C2130)
 fun NowPlayingCard(state: NowPlayingState, onAction: (MediaAction) -> Unit, modifier: Modifier = Modifier) {
     when (state) {
         is NowPlayingState.Active -> ActiveCard(state.track, onAction, modifier)
-        is NowPlayingState.Idle -> if (state.suggestedLabel != null) IdleCard(state.suggestedLabel, onAction, modifier)
+        is NowPlayingState.Idle -> if (state.suggestedLabel != null) IdleCard(state.suggestedLabel, state.brand, onAction, modifier)
         // Sin acceso no mostramos nada en el Inicio: el aviso para habilitarlo vive en Ajustes → Widgets.
         NowPlayingState.NoAccess -> Unit
     }
@@ -138,13 +138,20 @@ private fun ActiveCard(track: Track, onAction: (MediaAction) -> Unit, modifier: 
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = track.appLabel.uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    letterSpacing = 2.sp,
-                    color = Color.White.copy(alpha = 0.7f),
-                    maxLines = 1,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // El punto de color dice "esto es Spotify / YouTube Music" antes de leer nada.
+                    track.brand?.let { brand ->
+                        Box(Modifier.size(8.dp).clip(CircleShape).background(Color(brand.argb)))
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    Text(
+                        text = (track.brand?.name ?: track.appLabel).uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        letterSpacing = 2.sp,
+                        color = Color.White.copy(alpha = 0.7f),
+                        maxLines = 1,
+                    )
+                }
                 Text(
                     text = track.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -190,7 +197,7 @@ private fun ProgressLine(track: Track) {
 }
 
 @Composable
-private fun IdleCard(playerLabel: String, onAction: (MediaAction) -> Unit, modifier: Modifier) {
+private fun IdleCard(playerLabel: String, brand: PlayerBrand?, onAction: (MediaAction) -> Unit, modifier: Modifier) {
     Row(
         modifier
             .clip(CardShape)
@@ -200,7 +207,7 @@ private fun IdleCard(playerLabel: String, onAction: (MediaAction) -> Unit, modif
     ) {
         Text(stringResource(R.string.now_playing_idle), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.75f))
         Spacer(Modifier.width(14.dp))
-        PillButton(stringResource(R.string.now_playing_open, playerLabel)) { onAction(MediaAction.OpenPlayer) }
+        PillButton(stringResource(R.string.now_playing_open, playerLabel), brand) { onAction(MediaAction.OpenPlayer) }
     }
 }
 
@@ -233,17 +240,20 @@ private fun ControlButton(icon: ImageVector, size: Dp, primary: Boolean = false,
 }
 
 @Composable
-private fun PillButton(label: String, onClick: () -> Unit) {
+private fun PillButton(label: String, brand: PlayerBrand?, onClick: () -> Unit) {
     var isFocused by remember { mutableStateOf(false) }
+    // Con el color de cada reproductor: verde Spotify, rojo YouTube Music. Otro reproductor: blanco translúcido.
+    val idleColor = brand?.let { Color(it.argb) } ?: Color.White.copy(alpha = 0.2f)
+    val idleText = brand?.let { Color(it.onArgb) } ?: Color.White
     Text(
         text = label,
         style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.Bold,
-        color = if (isFocused) Color.Black else Color.White,
+        color = if (isFocused) Color.Black else idleText,
         modifier = Modifier
             .onFocusChanged { isFocused = it.isFocused }
             .clip(RoundedCornerShape(50))
-            .background(if (isFocused) Color.White else Color(0xFF1DB954))
+            .background(if (isFocused) Color.White else idleColor)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
     )

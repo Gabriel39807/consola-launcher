@@ -39,9 +39,20 @@ data class BackgroundTuning(
 /** Las letras incluidas en la app (todas con licencia libre OFL). System = la de la tele. */
 enum class FontChoice { System, Montserrat, Orbitron, Playfair, Bebas }
 
+/**
+ * Tu reproductor de música: el que se sugiere cuando no suena nada y el que se muestra si hay varios en pausa.
+ * Automático = el primero instalado (Spotify, después YouTube Music).
+ */
+enum class PreferredPlayer(val packageName: String?) {
+    Auto(null),
+    Spotify("com.spotify.tv.android"),
+    YouTubeMusic("com.google.android.youtube.tvmusic"),
+}
+
 data class WidgetSettings(
     val nowPlaying: Boolean = true,
     val bigClock: Boolean = false,
+    val player: PreferredPlayer = PreferredPlayer.Auto,
 )
 
 /** Los patrones de java.time para cada opción del reloj. Puro: se testea sin Android. */

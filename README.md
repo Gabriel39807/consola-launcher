@@ -136,6 +136,29 @@ Apretá Home: abre Consola. Y al prender la tele también arranca Consola, porqu
 
 > **Por qué a veces hay que sacar dos cosas de Google:** Android elige el Home por *prioridad* antes que por preferencia. En muchas teles el asistente de configuración de Google (`setupwraith`, prioridad 1) le gana a cualquier launcher instalado (prioridad 0). El script lo detecta: si después de sacar el inicio de Google el Home cae en el asistente, lo desactiva también. Con `-IncludeSetupWraith` lo forzás.
 
+> **El botón Ajustes del control** abría un panel que vive *dentro* del inicio de Google, y Android solo deja reemplazarlo a una app de sistema. Por eso el script activa **Consola · Botón Ajustes**, un servicio de accesibilidad que atrapa SOLO esa tecla (no lee la pantalla ni ninguna otra):
+>
+> - **Un toque:** abre los **ajustes rápidos de Consola**, un panel lateral encima de lo que estés viendo, sin pausarlo. Es una capa que queda armada y escondida desde que arranca el servicio: abrirla es solo deslizarla, por eso aparece al instante (escondida no se dibuja ni escucha nada). Tiene:
+>   - **Lo que está sonando:** OK pausa, IZQUIERDA/DERECHA cambian de canción.
+>   - **Volumen:** IZQUIERDA/DERECHA lo cambian y OK silencia.
+>   - **Entradas:** HDMI 1, 2, 3, AV y antena, con el nombre que les pusiste en la tele. Un clic y estás ahí; el punto verde indica que hay algo prendido.
+>   - **Atajos:** Imagen, Sonido, Red, Apagado, Protector, Controles, Accesibilidad, Personalizar y Más ajustes. Los que no existen en tu tele no aparecen.
+>
+>   Back, Home u otro toque lo cierran.
+> - **Mantenerlo 3 segundos:** abre los ajustes completos de la tele.
+>
+> **Otros botones que solo atendía el inicio de Google** (salen en `dumpsys window policy`) ahora los atiende Consola:
+>
+> | Botón | Qué hace ahora |
+> |---|---|
+> | Todas las apps | Abre la pestaña Apps de Consola |
+> | Guía | Abre la TV en vivo |
+> | Notificaciones | Abre los ajustes rápidos |
+>
+> El botón de Prime Video lo maneja la tele: si la app no está instalada, no hace nada (instalala desde la Play Store).
+>
+> En las teles KTC el botón llega como `KEYCODE_FOCUS`, no como `KEYCODE_SETTINGS`, y el servicio entiende los dos. Ojo: las teclas que se mandan con `adb shell input keyevent` no pasan por estos servicios. Para probarlo, usá el control de verdad.
+
 > ⚠️ Después de hacer esto, probá que el botón de **entradas/HDMI** del control siga funcionando. En algunas teles con Google TV, el selector de entradas vive dentro del inicio de Google.
 
 ## Si algo sale mal
@@ -158,7 +181,7 @@ Con `-UninstallLauncher` además desinstala Consola. Y en el peor de los casos, 
 - **Agregar o sacar del Inicio:** en Apps, **mantené OK** sobre cualquier app. Las que están en Inicio llevan una estrellita.
 - **Estilo del Inicio:** en **Ajustes → Estilo** elegís entre **Cine**, **PS5**, **Xbox**, **Minimal** y **Filas** (tus apps agrupadas solas por tipo: Video, Música, Juegos). Todos comparten tus favoritas, el "mantener OK para mover" y los widgets.
 - **Reloj:** en **Ajustes → Reloj** cambiás formato (24 h / 12 h), segundos, fecha (completa, corta, solo el día u oculta), grosor y tamaño. Se aplica a la barra, al Inicio Minimal, al widget y al protector de pantalla.
-- **Widgets:** en **Ajustes → Widgets** activás **Reproduciendo ahora** (carátula, canción, avance y controles, con el color del disco) y **Reloj grande**. El de música necesita "acceso a notificaciones": la fila "Permitir ver qué está sonando" abre la pantalla de la tele para darlo, o lo da `debloat.ps1`.
+- **Widgets:** en **Ajustes → Widgets** activás **Reproduciendo ahora** (carátula, canción, avance y controles, con el color del disco) y **Reloj grande**. Funciona con **Spotify y YouTube Music** (y cualquier reproductor): cada uno con su color. En **Reproductor** elegís el tuyo (Automático, Spotify o YouTube Music): es el que se sugiere si no suena nada y el que se muestra si hay varios en pausa. Los temas no lo cambian. El de música necesita "acceso a notificaciones": la fila "Permitir ver qué está sonando" abre la pantalla de la tele para darlo, o lo da `debloat.ps1`.
 - **Temas:** en **Ajustes → Temas** aplicás un look completo con un clic (Cine, Gamer, Zen, Arcade) o guardás el tuyo. Un tema cambia estilo, reloj, widgets, oscurecido, "que baile" y letra, pero NUNCA tus apps ni tus fondos.
 - **Letras:** Montserrat, Orbitron, Playfair y Bebas Neue (licencia OFL, en `assets/licenses`), o la de la tele.
 - **Fondos vivos:** en **Ajustes → Fondos → Cómo se ve**: cambiar de fondo solo (cada 15, 30 o 60 minutos, o uno de día y otro de noche: mantené OK sobre un fondo para marcarlo), oscurecer el fondo, y **que el fondo baile con la música** (pide permiso de micrófono porque Android lo exige para analizar el audio; no graba nada).
@@ -189,3 +212,7 @@ Spotify no le da esa información a otras apps directamente. Pero toda app de m�
 ## Un detalle de foco que vale la pena entender
 
 Al subir desde una app hacia las pestañas, la búsqueda de foco 2D de Compose elige la pestaña **más cercana en línea recta**: desde Spotify caía en Ajustes y te cambiaba de pestaña sin querer. `focusRestorer()` no lo evitó (medido en la tele). La solución en [HomeScreen.kt](app/src/main/java/com/consola/launcher/home/HomeScreen.kt) es determinística: mientras el foco está en el contenido, las pestañas no son enfocables. ARRIBA primero intenta moverse dentro del contenido, y si ya no hay nada más arriba, va a la pestaña donde estabas.
+
+Mismo criterio en otros lugares:
+- **Ajustes:** ABAJO desde las pestañas entra al menú de secciones (en la sección donde estás), e IZQUIERDA desde cualquier panel vuelve a esa sección, no a la que quede a la misma altura. Usa `focusProperties { enter / exit }` en [SettingsScreen.kt](app/src/main/java/com/consola/launcher/settings/SettingsScreen.kt).
+- **Home con Consola abierta:** desde cualquier pestaña te lleva al Inicio, con el foco en tu primera app ([MainActivity.kt](app/src/main/java/com/consola/launcher/MainActivity.kt) mira la categoría HOME en `onNewIntent`).

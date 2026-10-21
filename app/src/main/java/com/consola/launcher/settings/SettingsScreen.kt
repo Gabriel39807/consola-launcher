@@ -26,6 +26,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -50,11 +55,13 @@ enum class SettingsSection(@StringRes val label: Int) {
 }
 
 /** Dos paneles, como los ajustes de cualquier tele: menú a la izquierda, contenido a la derecha. */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val audioStatus by viewModel.audioStatus.collectAsStateWithLifecycle()
     var section by rememberSaveable { mutableStateOf(SettingsSection.Style) }
+    val menuFocus = remember { SettingsSection.entries.associateWith { FocusRequester() } }
 
     // El servidor para el celular vive mientras estés en Ajustes (en cualquier sección) y se cierra al salir:
     // nada de puertos abiertos de más en tu red, pero tampoco tenés que ir a Fondos para cambiar el nombre de una app.
@@ -66,11 +73,27 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     Row(
         Modifier
             .fillMaxSize()
+            // Bajando desde las pestañas se entra al MENÚ, en la sección donde estás, no al panel de la derecha:
+            // primero elegís qué ajustar y recién después entrás. La búsqueda de foco normal elegía lo más cercano.
+            .focusProperties {
+                enter = { direction -> if (direction == FocusDirection.Down) menuFocus.getValue(section) else FocusRequester.Default }
+            }
+            .focusGroup()
             .padding(start = TvSafeArea.Horizontal, end = TvSafeArea.Horizontal, bottom = TvSafeArea.Vertical),
     ) {
-        SectionMenu(selected = section, onSelect = { section = it }, modifier = Modifier.width(210.dp))
+        SectionMenu(selected = section, onSelect = { section = it }, focusRequesters = menuFocus, modifier = Modifier.width(210.dp))
         Spacer(Modifier.width(40.dp))
-        Box(Modifier.weight(1f).fillMaxHeight()) {
+        Box(
+            Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                // IZQUIERDA desde el panel vuelve a la sección donde estabas, no a la que quede a la misma altura:
+                // si bajaste por los estilos, la más cercana sería "Widgets" y te cambiaría de sección sin querer.
+                .focusProperties {
+                    exit = { direction -> if (direction == FocusDirection.Left) menuFocus.getValue(section) else FocusRequester.Default }
+                }
+                .focusGroup(),
+        ) {
             when (section) {
                 SettingsSection.Style -> StylePanel(current = state.settings.layout, onSelect = viewModel::setLayout)
                 SettingsSection.Themes -> {
@@ -109,7 +132,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun SectionMenu(selected: SettingsSection, onSelect: (SettingsSection) -> Unit, modifier: Modifier = Modifier) {
+private fun SectionMenu(
+    selected: SettingsSection,
+    onSelect: (SettingsSection) -> Unit,
+    focusRequesters: Map<SettingsSection, FocusRequester>,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier.focusRestorer(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         SettingsSection.entries.forEach { section ->
             MenuItem(
@@ -117,13 +145,14 @@ private fun SectionMenu(selected: SettingsSection, onSelect: (SettingsSection) -
                 isSelected = section == selected,
                 // Igual que las pestañas: la sección cambia apenas le llega el foco.
                 onFocused = { onSelect(section) },
+                modifier = Modifier.focusRequester(focusRequesters.getValue(section)),
             )
         }
     }
 }
 
 @Composable
-private fun MenuItem(@StringRes label: Int, isSelected: Boolean, onFocused: () -> Unit) {
+private fun MenuItem(@StringRes label: Int, isSelected: Boolean, onFocused: () -> Unit, modifier: Modifier = Modifier) {
     var isFocused by remember { mutableStateOf(false) }
     Text(
         text = stringResource(label),
@@ -134,7 +163,7 @@ private fun MenuItem(@StringRes label: Int, isSelected: Boolean, onFocused: () -
             isSelected -> Color.White
             else -> Color.White.copy(alpha = 0.6f)
         },
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .onFocusChanged { state ->
                 isFocused = state.isFocused

@@ -3,6 +3,7 @@ package com.consola.launcher.home
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.media.tv.TvContract
 import android.provider.Settings
 import android.widget.Toast
 import com.consola.launcher.R
@@ -26,6 +27,13 @@ object SystemActions {
     /** La pantalla de la tele para dar "acceso a notificaciones" (lo necesita el widget de música). */
     fun openNotificationAccess(context: Context) =
         launch(context, Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS), context.getString(R.string.open_failed, context.getString(R.string.tv_settings)))
+
+    /** La tele en vivo (antena/cable): el botón Guía del control. Lo abre la app de TV de la tele. */
+    fun openLiveTv(context: Context) = launch(
+        context,
+        Intent(Intent.ACTION_VIEW).setDataAndType(TvContract.Channels.CONTENT_URI, TvContract.Channels.CONTENT_TYPE),
+        context.getString(R.string.open_failed, context.getString(R.string.live_tv)),
+    )
 
     fun openTvSettings(context: Context) =
         launch(context, Intent(Settings.ACTION_SETTINGS), context.getString(R.string.open_failed, context.getString(R.string.tv_settings)))

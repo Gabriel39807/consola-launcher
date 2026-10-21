@@ -4,6 +4,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
@@ -19,6 +21,9 @@ import androidx.palette.graphics.Palette
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.Executors
 
 data class Track(
     val packageName: String,
@@ -33,6 +38,8 @@ data class Track(
     /** SystemClock.elapsedRealtime() del momento en que se midió [positionMs]: con eso calculamos el avance. */
     val positionUpdatedAt: Long,
     val speed: Float,
+    /** Spotify, YouTube Music...: su color y nombre. null para el resto. */
+    val brand: PlayerBrand? = null,
 )
 
 sealed interface NowPlayingState {
@@ -40,7 +47,9 @@ sealed interface NowPlayingState {
     data object NoAccess : NowPlayingState
 
     /** Nada sonando. Si hay una app de música instalada, la sugerimos para abrirla con un clic. */
-    data class Idle(val suggestedPackage: String?, val suggestedLabel: String?) : NowPlayingState
+    data class Idle(val suggestedPackage: String?, val suggestedLabel: String?) : NowPlayingState {
+        val brand: PlayerBrand? get() = suggestedPackage?.let(Players::brandFor)
+    }
 
     data class Active(val track: Track) : NowPlayingState
 }
@@ -68,6 +77,21 @@ class NowPlayingSource(context: Context) {
     private var users = 0
     private var cachedArtKey: String? = null
     private var cachedArt: Pair<ImageBitmap?, Int?> = null to null
+    // Carátulas que llegan como dirección (YouTube Music, por ejemplo) en vez de imagen: se bajan en otro hilo.
+    private val artLoader = Executors.newSingleThreadExecutor()
+    private val linkedArt = HashMap<String, Bitmap?>()
+
+    /** Tu reproductor (Ajustes → Widgets). Cambia qué se sugiere y cuál se muestra si hay varios en pausa. */
+    var preferredPackage: String? = null
+        set(value) {
+            if (field == value) return
+            field = value
+            when {
+                started -> choose(sessions.getActiveSessions(listenerComponent))
+                // Sin acceso no hay nada que sugerir: el aviso para darlo vive en Ajustes → Widgets.
+                _state.value is NowPlayingState.Idle -> _state.value = idle()
+            }
+        }
 
     fun hasAccess(): Boolean =
         NotificationManagerCompat.getEnabledListenerPackages(appContext).contains(appContext.packageName)
@@ -143,9 +167,14 @@ class NowPlayingSource(context: Context) {
     // Preferimos lo que está sonando; si nada suena, lo último en pausa. Sesiones sin datos
     // (como la de Bluetooth desconectado de esta tele) no cuentan.
     private fun choose(list: List<MediaController>) {
-        val usable = list.filter { it.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE) != null }
-        val best = usable.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING } ?: usable.firstOrNull()
-        attach(best)
+        val infos = list.map {
+            SessionInfo(
+                packageName = it.packageName,
+                isPlaying = it.playbackState?.state == PlaybackState.STATE_PLAYING,
+                hasTitle = it.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE) != null,
+            )
+        }
+        attach(PlayerChoice.pick(infos, preferredPackage)?.let(list::get))
         publish()
     }
 
@@ -180,15 +209,18 @@ class NowPlayingSource(context: Context) {
                 positionMs = playback?.position ?: 0L,
                 positionUpdatedAt = playback?.lastPositionUpdateTime ?: SystemClock.elapsedRealtime(),
                 speed = playback?.playbackSpeed ?: 0f,
+                brand = Players.brandFor(current.packageName),
             ),
         )
     }
 
     // La carátula llega en cada callback (cada pausa, cada salto): la convertimos una vez por canción.
     private fun artFor(packageName: String, title: String, metadata: MediaMetadata): Pair<ImageBitmap?, Int?> {
+        val link = ART_LINK_KEYS.firstNotNullOfOrNull { metadata.getString(it) }?.takeIf { it.isNotBlank() }
         val source = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
+            ?: link?.let(::linkedArtOrLoad)
         val key = "$packageName|$title|${source?.generationId}"
         if (key == cachedArtKey) return cachedArt
 
@@ -208,8 +240,38 @@ class NowPlayingSource(context: Context) {
         return Bitmap.createScaledBitmap(readable, ART_SIZE_PX, ART_SIZE_PX, true)
     }
 
+    /** La carátula por dirección, si ya se bajó. Si no, la pide (una vez) y mientras tanto va el ícono de la app. */
+    private fun linkedArtOrLoad(link: String): Bitmap? {
+        if (linkedArt.containsKey(link)) return linkedArt[link]
+        linkedArt[link] = null
+        artLoader.execute {
+            val bitmap = runCatching { downloadArt(link) }.getOrNull()
+            mainHandler.post {
+                linkedArt[link] = bitmap
+                if (bitmap != null && started) publish()
+            }
+        }
+        return null
+    }
+
+    private fun downloadArt(link: String): Bitmap? {
+        val uri = Uri.parse(link)
+        val stream = when (uri.scheme) {
+            "content", "android.resource", "file" -> appContext.contentResolver.openInputStream(uri)
+            "http", "https" -> (URL(link).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 4_000
+                readTimeout = 4_000
+            }.inputStream
+            else -> null
+        } ?: return null
+        return stream.use { BitmapFactory.decodeStream(it) }?.let { Bitmap.createScaledBitmap(it, ART_SIZE_PX, ART_SIZE_PX, true) }
+    }
+
     private fun idle(): NowPlayingState.Idle {
-        val player = SUGGESTED_PLAYERS.firstOrNull { appContext.packageManager.getLeanbackLaunchIntentForPackage(it) != null }
+        val player = PlayerChoice.suggest(
+            isInstalled = { appContext.packageManager.getLeanbackLaunchIntentForPackage(it) != null },
+            preferredPackage = preferredPackage,
+        )
         return NowPlayingState.Idle(player, player?.let(::labelOf))
     }
 
@@ -227,6 +289,10 @@ class NowPlayingSource(context: Context) {
 
     private companion object {
         const val ART_SIZE_PX = 192
-        val SUGGESTED_PLAYERS = listOf("com.spotify.tv.android", "com.google.android.youtube.tvmusic")
+        val ART_LINK_KEYS = listOf(
+            MediaMetadata.METADATA_KEY_ALBUM_ART_URI,
+            MediaMetadata.METADATA_KEY_ART_URI,
+            MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI,
+        )
     }
 }

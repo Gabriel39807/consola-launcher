@@ -91,6 +91,31 @@
 
     <string name="dream_name">Consola</string>
     <string name="media_listener_name">Consola · Reproduciendo ahora</string>
+    <string name="settings_key_service_name">Consola · Botón Ajustes</string>
+    <string name="settings_key_service_description">Hace que el botón Ajustes del control abra los ajustes rápidos (un toque) o los completos (mantenerlo). Solo mira esa tecla: no lee la pantalla ni lo que escribís.</string>
+
+    <string name="widget_player">Reproductor</string>
+    <string name="widget_player_desc">El que se sugiere si no suena nada, y el que se muestra si hay varios en pausa</string>
+    <string name="player_auto">Automático</string>
+    <string name="player_spotify">Spotify</string>
+    <string name="player_youtube_music">YouTube Music</string>
+
+    <!-- Panel de ajustes rápidos -->
+    <string name="live_tv">la TV en vivo</string>
+    <string name="quick_panel_title">Ajustes rápidos</string>
+    <string name="quick_panel_hint">Mantené Ajustes 3 s para ver todos</string>
+    <string name="quick_volume">Volumen</string>
+    <string name="quick_volume_muted">Silenciado</string>
+    <string name="quick_inputs">Entradas</string>
+    <string name="quick_picture">Imagen</string>
+    <string name="quick_sound">Sonido</string>
+    <string name="quick_network">Red</string>
+    <string name="quick_sleep_timer">Apagado</string>
+    <string name="quick_screensaver">Protector</string>
+    <string name="quick_accessories">Controles</string>
+    <string name="quick_accessibility">Accesibilidad</string>
+    <string name="quick_personalize">Personalizar</string>
+    <string name="quick_all_settings">Más ajustes</string>
 
     <!-- Estilos de Inicio -->
     <string name="layout_cinema">Cine</string>

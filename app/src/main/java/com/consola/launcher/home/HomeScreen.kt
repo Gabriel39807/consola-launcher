@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,9 +40,16 @@ import com.consola.launcher.ui.TvSafeArea
 // Color de la aurora mientras ninguna app tiene el foco (o si no pudimos sacarle el color).
 private val DefaultAccent = Color(0xFF2E4BFF)
 
-/** El armazón: fondo animado + pestañas arriba + la pestaña elegida abajo. */
+/**
+ * El armazón: fondo animado + pestañas arriba + la pestaña elegida abajo.
+ * [openRequest]: alguien (el panel rápido, un botón del control) pidió abrir directo en esa pestaña.
+ */
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
+fun HomeScreen(
+    openRequest: Destination? = null,
+    onOpenHandled: () -> Unit = {},
+    viewModel: HomeViewModel = viewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var destination by rememberSaveable { mutableStateOf(Destination.Home) }
@@ -55,6 +63,18 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     fun focusSelectedTab() {
         gate.tabsFocusable = true
         tabFocus.getValue(destination).requestFocus()
+    }
+
+    LaunchedEffect(openRequest) {
+        val requested = openRequest ?: return@LaunchedEffect
+        destination = requested
+        if (requested == Destination.Home) {
+            // Home: el foco vuelve a tu primera app, igual que al prender la tele.
+            initialFocusDone = false
+        } else {
+            focusSelectedTab()
+        }
+        onOpenHandled()
     }
 
     // Cada vuelta al inicio recarga: apps instaladas/desinstaladas y fondos nuevos.

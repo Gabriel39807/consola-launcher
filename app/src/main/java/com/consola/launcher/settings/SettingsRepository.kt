@@ -44,6 +44,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         widgets = WidgetSettings(
             nowPlaying = prefs[WIDGET_NOW_PLAYING] ?: true,
             bigClock = prefs[WIDGET_BIG_CLOCK] ?: false,
+            player = SettingsCodec.decodeEnum(prefs[WIDGET_PLAYER], PreferredPlayer.Auto),
         ),
         tuning = BackgroundTuning(
             rotation = SettingsCodec.decodeEnum(prefs[BG_ROTATION], Rotation.Off),
@@ -71,6 +72,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         prefs[CLOCK_SIZE] = settings.clock.size.name
         prefs[WIDGET_NOW_PLAYING] = settings.widgets.nowPlaying
         prefs[WIDGET_BIG_CLOCK] = settings.widgets.bigClock
+        prefs[WIDGET_PLAYER] = settings.widgets.player.name
         prefs[BG_ROTATION] = settings.tuning.rotation.name
         prefs[BG_DIM] = settings.tuning.dim.name
         prefs[BG_MUSIC] = settings.tuning.musicReactive
@@ -98,6 +100,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val CLOCK_SIZE = stringPreferencesKey("clock_size")
         val WIDGET_NOW_PLAYING = booleanPreferencesKey("widget_now_playing")
         val WIDGET_BIG_CLOCK = booleanPreferencesKey("widget_big_clock")
+        val WIDGET_PLAYER = stringPreferencesKey("widget_player")
         val BG_ROTATION = stringPreferencesKey("bg_rotation")
         val BG_DIM = stringPreferencesKey("bg_dim")
         val BG_MUSIC = booleanPreferencesKey("bg_music")

@@ -1,0 +1,29 @@
+name: Reportar un problema
+description: Algo no anda como debería
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: ¿Qué pasó?
+      description: Contá qué hiciste, qué esperabas y qué pasó.
+    validations:
+      required: true
+  - type: input
+    id: tv
+    attributes:
+      label: Tele
+      placeholder: "Ej: KTC 4K Smart TV, Android TV 14"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión de Consola
+      placeholder: "Ej: 0.7.0"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Registro (opcional)
+      description: "La salida de `adb logcat -d | grep -i consola` ayuda muchísimo."
+      render: shell

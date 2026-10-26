@@ -1,0 +1,15 @@
+name: Proponer una idea
+description: Algo nuevo que te gustaría ver
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: La idea
+      description: ¿Qué te gustaría poder hacer? Si podés, contá para qué.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: ¿Lo resolvés hoy de otra forma?

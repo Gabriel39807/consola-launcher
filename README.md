@@ -1,10 +1,90 @@
+<div align="center">
+
 # Consola Launcher
 
-Un inicio para Google TV con estilo de consola: pestañas **Buscar · Inicio · Apps · Ajustes**, un título grande de la app enfocada, una fila de favoritas y un **fondo animado**. El fondo es un video en loop que subís **desde el celular con un QR**, o una aurora animada que toma el color de la app enfocada.
+**Un inicio para Google TV sin anuncios, con estilo de consola, fondos animados y todo personalizable.**
 
-Pensado para: **Challenger 4K con Google TV, Android TV 14**.
+*A clean, ad-free, console-style home screen for Google TV with live wallpapers, widgets and a music visualizer.*
+
+[![CI](https://github.com/Gabriel39807/consola-launcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Gabriel39807/consola-launcher/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Gabriel39807/consola-launcher?label=versi%C3%B3n)](https://github.com/Gabriel39807/consola-launcher/releases/latest)
+[![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
+![Android TV](https://img.shields.io/badge/Android%20TV-8.0%2B-3DDC84?logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose%20for%20TV-4285F4?logo=jetpackcompose&logoColor=white)
+
+<img src="docs/screenshots/home-cinema.jpg" alt="Inicio en estilo Cine: título de la app enfocada, reloj, música, clima, calendario y la fila de favoritas" width="100%">
+
+</div>
 
 ---
+
+## ¿Qué es?
+
+Google TV llena el inicio de recomendaciones y publicidad. **Consola** lo reemplaza por uno limpio que armás a tu gusto: cinco estilos inspirados en consolas, fondos de video que subís desde el celular, widgets, un visualizador que dibuja la música y un panel de ajustes rápidos propio. Corre en teles económicas (probado en una KTC/Challenger 4K con Android TV 14, 1,8 GB de RAM y GPU Mali-G52) y cada animación está medida en la tele.
+
+## Lo que tiene
+
+| | |
+|---|---|
+| 🎮 **5 estilos de Inicio** | Cine, PS5, Xbox, Minimal y Filas (tus apps agrupadas por tipo). Se cambian en un clic. |
+| 🎞️ **Fondos vivos** | Videos en loop que subís desde el celular con un QR (se convierten solos a 1080p), o una aurora que toma el color de la app enfocada. Rotación, uno de día y otro de noche, y oscurecido. |
+| 🎵 **Música** | Widget "Reproduciendo ahora" para Spotify, YouTube Music y cualquier reproductor, con el color del disco y controles. |
+| 📊 **Visualizador** | Barras, Onda, Espejo o un fondo que late con los graves. Abajo a lo ancho, dentro de la tarjeta de la música, y en el protector. |
+| ⛅ **Widgets** | Clima (sin cuenta), cuenta regresiva, calendario del mes y reloj grande. |
+| ⚙️ **Ajustes rápidos** | El botón Ajustes del control abre un panel lateral al instante: lo que suena, volumen, **entradas HDMI directas** y atajos. Mantenerlo 3 s abre los ajustes de la tele. |
+| 🎨 **Temas y letras** | Temas listos (Cine, Gamer, Zen, Arcade) o los tuyos, cuatro letras, reloj a medida. |
+| 📱 **Desde el celular** | Subí fondos, cambiá el nombre y la portada de cada app, el mensaje del protector, la ciudad del clima y la cuenta regresiva. |
+| 🌙 **Protector de pantalla** | Tu fondo con la hora y la canción, moviéndose para no marcar la pantalla. |
+| 🚫 **Sin publicidad** | Reemplaza el inicio de Google de forma reversible, y atiende los botones del control que dependían de él. |
+
+## Capturas
+
+| Cine | PS5 | Xbox |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/home-cinema.jpg" alt="Estilo Cine"> | <img src="docs/screenshots/home-ps5.jpg" alt="Estilo PS5"> | <img src="docs/screenshots/home-xbox.jpg" alt="Estilo Xbox"> |
+| **Minimal** | **Filas** | **Protector de pantalla** |
+| <img src="docs/screenshots/home-minimal.jpg" alt="Estilo Minimal"> | <img src="docs/screenshots/home-rows.jpg" alt="Estilo Filas"> | <img src="docs/screenshots/screensaver.jpg" alt="Protector de pantalla con el visualizador"> |
+| **Ajustes → Estilo** | **Ajustes → Widgets** | **Ajustes → Temas** |
+| <img src="docs/screenshots/settings-style.jpg" alt="Elegir el estilo del Inicio"> | <img src="docs/screenshots/settings-widgets.jpg" alt="Prender y configurar widgets"> | <img src="docs/screenshots/settings-themes.jpg" alt="Temas y letras"> |
+
+**La página del celular** (se abre con el QR de Ajustes, en la misma WiFi):
+
+<img src="docs/screenshots/phone.jpg" alt="Página del celular: fondos, apps y widgets" width="100%">
+
+## Instalación rápida
+
+> Necesitás una tele con Google TV / Android TV y una PC con [ADB](https://developer.android.com/tools/releases/platform-tools). La guía completa, paso a paso, está más abajo.
+
+1. Bajá el APK de la [última versión](https://github.com/Gabriel39807/consola-launcher/releases/latest).
+2. Activá la depuración en la tele y conectate (ver [Paso 1](#paso-1-preparar-la-tele)).
+3. Instalalo y probalo como una app más, **sin tocar nada del sistema**:
+   ```bash
+   adb install consola-launcher.apk
+   ```
+4. Si te gusta, hacelo tu inicio (todo reversible con [`restore.ps1`](scripts/restore.ps1)):
+   ```bash
+   powershell -ExecutionPolicy Bypass -File .\scripts\debloat.ps1 -Device 192.168.1.50:5555
+   ```
+
+¿Preferís compilarlo? `./gradlew assembleRelease` (o abrí la carpeta en Android Studio).
+
+## Privacidad
+
+- **Sin cuentas, sin anuncios, sin analíticas.** Consola no manda nada tuyo a ningún lado.
+- **Red:** el clima usa [Open-Meteo](https://open-meteo.com); si no elegís ciudad, la deduce de tu conexión con ipapi.co (o ipwho.is). Eso es todo lo que sale de la tele, y solo con el widget de clima prendido.
+- **Página del celular:** vive en tu red local, solo mientras estás en Ajustes, y cada vez con un código distinto en la dirección.
+- **Micrófono:** Android lo exige para *analizar* el audio que suena (el visualizador). No se graba ni se guarda nada.
+
+## Hecho con
+
+Kotlin · Jetpack Compose for TV · Media3 (ExoPlayer y Transformer) · DataStore · NanoHTTPD · ZXing. Arquitectura por funcionalidad, inyección de dependencias a mano y la lógica pura testeada sin emulador (`./gradlew testDebugUnitTest`).
+
+**Contribuir:** leé [CONTRIBUTING.md](CONTRIBUTING.md). **Cambios por versión:** [CHANGELOG.md](CHANGELOG.md). **Licencia:** [MIT](LICENSE) (las letras, OFL).
+
+---
+
+# Guía completa
 
 ## Antes de tocar código: 3 conceptos
 
@@ -32,17 +112,19 @@ Una tele económica tiene muy pocos decodificadores de video por hardware. Si tu
 
 ```
 app/src/main/java/com/consola/launcher/
-├── apps/          → qué apps hay y en qué orden
-│   ├── AppCatalog.kt          ← regla de negocio pura (con tests)
-│   └── InstalledAppsSource.kt ← adaptador al PackageManager
+├── apps/          → qué apps hay, en qué orden, de qué tipo, y sus portadas propias
+├── audio/         → escuchar lo que suena: graves/medios/agudos y el espectro del visualizador
 ├── background/    → fondos animados (video + aurora) y la biblioteca de videos
-├── home/          → el armazón: pestañas, Inicio y Apps
+├── dream/         → el protector de pantalla
+├── home/          → el armazón: pestañas, los 5 estilos de Inicio y Apps
+├── keys/          → el botón Ajustes y los botones del control que atendía Google
+├── quickpanel/    → el panel de ajustes rápidos (una capa sobre todo)
 ├── search/        → la pestaña Buscar (abre el Asistente de Google)
-├── settings/      → Ajustes: fondos, apps del inicio, sistema (guardado con DataStore)
-├── upload/        → subir fondos desde el celular: servidor HTTP, QR y conversión a 1080p
-├── dream/         → el protector de pantalla: tu fondo con la hora
-├── widgets/       → "Reproduciendo ahora" (Spotify y cualquier app de música) y reloj grande
-├── ui/            → tema y márgenes seguros
+├── settings/      → Ajustes y todo lo que se guarda (DataStore), temas incluidos
+├── upload/        → la página del celular: servidor HTTP, QR y conversión a 1080p
+├── weather/       → el clima (Open-Meteo)
+├── widgets/       → música, visualizador, clima, cuenta regresiva y calendario
+├── ui/            → tema, letras, reloj y márgenes seguros
 ├── LauncherGraph.kt  ← una instancia de cada cosa para toda la app (DI a mano)
 └── LauncherConfig.kt ← favoritas y ocultas POR DEFECTO (después se cambian desde Ajustes)
 ```

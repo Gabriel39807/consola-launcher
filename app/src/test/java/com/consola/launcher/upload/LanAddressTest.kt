@@ -8,7 +8,7 @@ class LanAddressTest {
 
     @Test
     fun `prefiere la red de casa tipica`() {
-        assertEquals("192.168.20.72", LanAddress.pick(listOf("10.0.0.5", "192.168.20.72")))
+        assertEquals("192.168.1.50", LanAddress.pick(listOf("10.0.0.5", "192.168.1.50")))
     }
 
     @Test

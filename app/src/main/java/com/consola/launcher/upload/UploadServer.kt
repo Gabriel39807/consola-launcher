@@ -24,6 +24,12 @@ interface UploadHandler {
     fun resetCover(packageName: String): Boolean
     fun messageJson(): String
     fun setMessage(text: String): Boolean
+
+    // Widgets que necesitan escribir algo: la ciudad del clima y la cuenta regresiva.
+    fun widgetsJson(): String
+    /** Devuelve el JSON de respuesta: la ciudad encontrada, o por qué no. Vacío = automática. */
+    fun setCity(name: String): String
+    fun setCountdown(title: String, date: String): Boolean
 }
 
 /**
@@ -55,6 +61,10 @@ class UploadServer(
             path == "$base/cover/reset" && method == Method.POST -> ok(handler.resetCover(session.param("package")))
             path == "$base/message" && method == Method.GET -> json(handler.messageJson())
             path == "$base/message" && method == Method.POST -> ok(handler.setMessage(session.param("text")))
+            path == "$base/widgets" && method == Method.GET -> json(handler.widgetsJson())
+            path == "$base/city" && method == Method.POST -> json(handler.setCity(session.param("name")))
+            path == "$base/countdown" && method == Method.POST ->
+                ok(handler.setCountdown(session.param("title"), session.param("date")))
             // Sin el código correcto ni siquiera confirmamos que acá hay algo.
             else -> newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "No encontrado")
         }

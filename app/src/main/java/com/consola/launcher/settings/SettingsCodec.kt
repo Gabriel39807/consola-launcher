@@ -58,7 +58,7 @@ object SettingsCodec {
         theme.widgets.nowPlaying,
         theme.widgets.bigClock,
         theme.dim.name,
-        theme.musicReactive,
+        theme.widgets.visualizer.name,
         theme.font.name,
     ).joinToString("|") { clean(it.toString()) }
 
@@ -80,11 +80,18 @@ object SettingsCodec {
             widgets = WidgetSettings(
                 nowPlaying = f[8].toBooleanStrictOrNull() ?: return null,
                 bigClock = f[9].toBooleanStrictOrNull() ?: return null,
+                visualizer = decodeVisualizer(f[11]),
             ),
             dim = decodeEnum(f[10], DimLevel.None),
-            musicReactive = f[11].toBooleanStrictOrNull() ?: return null,
             font = decodeEnum(f[12], FontChoice.System),
         )
+    }
+
+    // Hasta la v0.6 este campo era "true/false" (el fondo que late): los temas viejos siguen cargando.
+    private fun decodeVisualizer(raw: String): VisualizerStyle = when (raw) {
+        "true" -> VisualizerStyle.Pulse
+        "false" -> VisualizerStyle.Off
+        else -> decodeEnum(raw, VisualizerStyle.Off)
     }
 
     fun encodeThemes(themes: List<Theme>): String = themes.joinToString(LINE, transform = ::encodeTheme)

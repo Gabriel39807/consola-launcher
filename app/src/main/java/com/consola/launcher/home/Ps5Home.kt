@@ -1,10 +1,14 @@
 package com.consola.launcher.home
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,14 +47,23 @@ internal fun Ps5Home(model: HomeModel, callbacks: HomeCallbacks, reorder: Reorde
         Spacer(Modifier.height(8.dp))
         FocusedTitle(focused, MaterialTheme.typography.displayMedium, Modifier.padding(start = TvSafeArea.Horizontal))
         Spacer(Modifier.weight(1f))
-        HomeWidgets(
-            widgets = model.settings.widgets,
-            clock = model.settings.clock,
-            nowPlaying = model.nowPlaying,
-            onMediaAction = callbacks.onMediaAction,
-            vertical = false,
-            horizontalAlignment = Alignment.Start,
-            modifier = Modifier.padding(start = TvSafeArea.Horizontal, bottom = TvSafeArea.Vertical),
-        )
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = TvSafeArea.Horizontal).padding(bottom = TvSafeArea.Vertical),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            HomeWidgets(
+                widgets = model.settings.widgets,
+                clock = model.settings.clock,
+                nowPlaying = model.nowPlaying,
+                onMediaAction = callbacks.onMediaAction,
+                vertical = true,
+                horizontalAlignment = Alignment.Start,
+                // 380 + la info (440) entran en el ancho de la tele; con 440 + 440 se pisaban.
+                cardWidth = 380.dp,
+                musicBackdrop = musicBackdrop(model),
+            )
+            InfoSlot(model)
+        }
     }
 }

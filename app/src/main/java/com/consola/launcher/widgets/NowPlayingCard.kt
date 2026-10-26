@@ -59,11 +59,21 @@ enum class MediaAction { PlayPause, Next, Previous, OpenPlayer }
 private val CardShape = RoundedCornerShape(20.dp)
 private val NeutralCard = Color(0xFF1C2130)
 
-/** "Reproduciendo ahora": la carátula, la canción, el avance y los controles, teñidos con el color del disco. */
+/**
+ * "Reproduciendo ahora": la carátula, la canción, el avance y los controles, teñidos con el color del disco.
+ * [backdrop]: algo que se dibuja DETRÁS del contenido, dentro de la tarjeta (las ondas "con la música"). Así el
+ * visualizador no suma alto ni empuja a los otros widgets.
+ */
 @Composable
-fun NowPlayingCard(state: NowPlayingState, onAction: (MediaAction) -> Unit, modifier: Modifier = Modifier) {
+fun NowPlayingCard(
+    state: NowPlayingState,
+    onAction: (MediaAction) -> Unit,
+    modifier: Modifier = Modifier,
+    width: Dp = 440.dp,
+    backdrop: (@Composable (Modifier) -> Unit)? = null,
+) {
     when (state) {
-        is NowPlayingState.Active -> ActiveCard(state.track, onAction, modifier)
+        is NowPlayingState.Active -> ActiveCard(state.track, onAction, modifier, width, backdrop)
         is NowPlayingState.Idle -> if (state.suggestedLabel != null) IdleCard(state.suggestedLabel, state.brand, onAction, modifier)
         // Sin acceso no mostramos nada en el Inicio: el aviso para habilitarlo vive en Ajustes → Widgets.
         NowPlayingState.NoAccess -> Unit
@@ -75,13 +85,17 @@ fun NowPlayingCard(state: NowPlayingState, onAction: (MediaAction) -> Unit, modi
  * La tarjeta grande arriba a la derecha se pisaba con el reloj centrado (sobre todo en formato 12 h).
  */
 @Composable
-fun NowPlayingPill(state: NowPlayingState, onAction: (MediaAction) -> Unit, modifier: Modifier = Modifier) {
+fun NowPlayingPill(
+    state: NowPlayingState,
+    onAction: (MediaAction) -> Unit,
+    modifier: Modifier = Modifier,
+    backdrop: (@Composable (Modifier) -> Unit)? = null,
+) {
     val track = (state as? NowPlayingState.Active)?.track ?: return
+    Box(modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.45f))) {
+    backdrop?.invoke(Modifier.matchParentSize())
     Row(
-        modifier
-            .clip(RoundedCornerShape(50))
-            .background(Color.Black.copy(alpha = 0.45f))
-            .padding(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+        Modifier.padding(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -106,10 +120,17 @@ fun NowPlayingPill(state: NowPlayingState, onAction: (MediaAction) -> Unit, modi
             onAction(MediaAction.PlayPause)
         }
     }
+    }
 }
 
 @Composable
-private fun ActiveCard(track: Track, onAction: (MediaAction) -> Unit, modifier: Modifier) {
+private fun ActiveCard(
+    track: Track,
+    onAction: (MediaAction) -> Unit,
+    modifier: Modifier,
+    width: Dp,
+    backdrop: (@Composable (Modifier) -> Unit)?,
+) {
     // El fondo de la tarjeta toma el color del disco, oscurecido para que el texto blanco se lea.
     val tint by animateColorAsState(
         targetValue = track.accentArgb?.let { Color(AccentTone.forBackground(it, maxBrightness = 0.35f)) } ?: NeutralCard,
@@ -119,12 +140,10 @@ private fun ActiveCard(track: Track, onAction: (MediaAction) -> Unit, modifier: 
 
     // UNA sola fila: carátula, texto y controles uno al lado del otro. Con dos "pisos" (carátula arriba,
     // controles abajo) había que apretar ARRIBA tres veces para salir de la fila de apps a las pestañas.
+    Box(modifier.width(width).clip(CardShape).background(tint.copy(alpha = 0.88f))) {
+    backdrop?.invoke(Modifier.matchParentSize())
     Row(
-        modifier
-            .width(440.dp)
-            .clip(CardShape)
-            .background(tint.copy(alpha = 0.88f))
-            .padding(12.dp),
+        Modifier.fillMaxWidth().padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
             Box(
@@ -173,6 +192,7 @@ private fun ActiveCard(track: Track, onAction: (MediaAction) -> Unit, modifier: 
             }
             Spacer(Modifier.width(8.dp))
             ControlButton(MediaIcons.SkipNext, size = 34.dp) { onAction(MediaAction.Next) }
+    }
     }
 }
 

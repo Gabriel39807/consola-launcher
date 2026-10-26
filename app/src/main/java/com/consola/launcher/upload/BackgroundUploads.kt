@@ -11,6 +11,7 @@ import com.consola.launcher.background.BackgroundCatalog
 import com.consola.launcher.background.BackgroundLibrary
 import com.consola.launcher.settings.BackgroundChoice
 import com.consola.launcher.settings.SettingsRepository
+import com.consola.launcher.weather.WeatherSource
 import fi.iki.elonen.NanoHTTPD
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -56,6 +57,7 @@ class BackgroundUploads(
     private val apps: InstalledAppsSource,
     private val covers: CoverStore,
     private val scope: CoroutineScope,
+    private val weather: WeatherSource,
 ) : UploadHandler {
 
     private val appContext = context.applicationContext
@@ -260,6 +262,37 @@ class BackgroundUploads(
     override fun setMessage(text: String): Boolean {
         val clean = UploadRules.cleanText(text, UploadRules.MAX_MESSAGE_LENGTH)
         scope.launch { settings.update { it.copy(dreamMessage = clean) } }
+        return true
+    }
+
+    // ---------- Widgets: ciudad del clima y cuenta regresiva ----------
+
+    override fun widgetsJson(): String = JSONObject()
+        .put("city", current.weatherPlace?.name.orEmpty())
+        .put("countdownTitle", current.countdown?.title.orEmpty())
+        .put("countdownDate", current.countdown?.date?.toString().orEmpty())
+        .toString()
+
+    // Corre en el hilo del servidor (no en el de la pantalla): puede esperar a Open-Meteo sin trabar nada.
+    override fun setCity(name: String): String {
+        val clean = UploadRules.cleanText(name, UploadRules.MAX_CITY_LENGTH)
+        if (clean.isEmpty()) {
+            scope.launch { settings.update { it.copy(weatherPlace = null) } }
+            return JSONObject().put("ok", true).put("city", "").toString()
+        }
+        val place = weather.findCity(clean)
+            ?: return JSONObject().put("ok", false).put("message", "No encontré \"$clean\". Probá con otro nombre.").toString()
+        scope.launch { settings.update { it.copy(weatherPlace = place) } }
+        return JSONObject().put("ok", true).put("city", place.name).toString()
+    }
+
+    override fun setCountdown(title: String, date: String): Boolean {
+        val countdown = when (val input = UploadRules.countdownInput(title, date)) {
+            CountdownInput.Clear -> null
+            CountdownInput.Invalid -> return false
+            is CountdownInput.Valid -> input.countdown
+        }
+        scope.launch { settings.update { it.copy(countdown = countdown) } }
         return true
     }
 

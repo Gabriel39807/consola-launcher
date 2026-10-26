@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.consola.launcher.settings.ClockStyle
 import com.consola.launcher.settings.WidgetSettings
@@ -27,12 +28,15 @@ fun HomeWidgets(
     modifier: Modifier = Modifier,
     vertical: Boolean = true,
     horizontalAlignment: Alignment.Horizontal = Alignment.End,
+    cardWidth: Dp = 440.dp,
+    // Las ondas "con la música" (de fondo en la tarjeta): las arma el Inicio, que tiene el sonido.
+    musicBackdrop: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val content: @Composable () -> Unit = {
         if (widgets.bigClock) {
             LiveClock(style = clock, placement = ClockPlacement.Hero, horizontalAlignment = horizontalAlignment, shadow = ReadableShadow)
         }
-        if (widgets.nowPlaying) NowPlayingCard(nowPlaying, onMediaAction)
+        if (widgets.nowPlaying) NowPlayingCard(nowPlaying, onMediaAction, width = cardWidth, backdrop = musicBackdrop)
     }
     if (vertical) {
         Column(modifier, verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = horizontalAlignment) { content() }

@@ -1,5 +1,6 @@
 package com.consola.launcher.upload
 
+import com.consola.launcher.widgets.Countdown
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -49,5 +50,19 @@ class UploadRulesTest {
     fun `un texto del celular se limpia y se corta`() {
         assertEquals("Hola mundo", UploadRules.cleanText("  Hola\n\tmundo  ", maxLength = 40))
         assertEquals("abc", UploadRules.cleanText("abcdef", maxLength = 3))
+    }
+
+    @Test
+    fun `la cuenta regresiva desde el celular se valida`() {
+        assertEquals(
+            CountdownInput.Valid(Countdown("Vacaciones", java.time.LocalDate.of(2026, 12, 20))),
+            UploadRules.countdownInput("  Vacaciones ", "2026-12-20"),
+        )
+        // Sin título = borrarla.
+        assertEquals(CountdownInput.Clear, UploadRules.countdownInput("   ", "2026-12-20"))
+        assertEquals(CountdownInput.Invalid, UploadRules.countdownInput("Vacaciones", "20/12/2026"))
+        // Un título larguísimo se corta, no se rechaza.
+        val long = UploadRules.countdownInput("x".repeat(80), "2026-12-20") as CountdownInput.Valid
+        assertEquals(UploadRules.MAX_COUNTDOWN_LENGTH, long.countdown.title.length)
     }
 }

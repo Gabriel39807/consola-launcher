@@ -10,6 +10,7 @@ import com.consola.launcher.dream.ScreensaverSetting
 import com.consola.launcher.settings.SettingsRepository
 import com.consola.launcher.settings.settingsDataStore
 import com.consola.launcher.upload.BackgroundUploads
+import com.consola.launcher.weather.WeatherSource
 import com.consola.launcher.widgets.NowPlayingSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +36,9 @@ class LauncherGraph(context: Context) {
     val settings = SettingsRepository(appContext.settingsDataStore)
     val backgrounds = BackgroundLibrary(appContext)
     val thumbnails = VideoThumbnails()
-    val uploads = BackgroundUploads(appContext, backgrounds, settings, apps, covers, appScope)
+    // Antes que uploads: el celular puede elegir la ciudad del clima, y eso la busca en Open-Meteo.
+    val weather = WeatherSource(CoroutineScope(SupervisorJob() + Dispatchers.Main))
+    val uploads = BackgroundUploads(appContext, backgrounds, settings, apps, covers, appScope, weather)
     val screensaver = ScreensaverSetting(appContext)
     val nowPlaying = NowPlayingSource(appContext)
     val audioPulse = AudioPulse(appContext)

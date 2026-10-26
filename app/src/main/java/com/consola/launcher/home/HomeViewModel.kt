@@ -1,5 +1,6 @@
 package com.consola.launcher.home
 
+import com.consola.launcher.weather.Place
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -61,6 +62,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Graves/medios/agudos de lo que suena, para el fondo que baila. */
     val audioLevels = graph.audioPulse.levels
+
+    /** Las barras del sonido, para el visualizador. */
+    val audioSpectrum = graph.audioPulse.spectrum
+
+    val weather = graph.weather.state
+
+    /** Casi siempre no hace nada: el clima se pide como mucho cada media hora. */
+    fun refreshWeather(place: Place?) = graph.weather.refreshIfStale(place)
 
     fun startPulse() = graph.audioPulse.start()
 

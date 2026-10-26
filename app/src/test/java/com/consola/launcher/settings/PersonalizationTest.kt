@@ -106,14 +106,49 @@ class PersonalizationTest {
                 layout = HomeLayout.Minimal,
                 font = FontChoice.Playfair,
                 clock = ClockStyle(use24h = false, showSeconds = true, date = DateStyle.Weekday, weight = ClockWeight.Light, size = ClockSize.Large),
-                widgets = WidgetSettings(nowPlaying = false, bigClock = true),
-                tuning = BackgroundTuning(dim = DimLevel.High, musicReactive = true),
+                widgets = WidgetSettings(nowPlaying = false, bigClock = true, visualizer = VisualizerStyle.Mirror),
+                tuning = BackgroundTuning(dim = DimLevel.High),
             ),
             id = "mio-1",
             name = "Noche zen",
         )
 
         assertEquals(theme, SettingsCodec.decodeTheme(SettingsCodec.encodeTheme(theme)))
+    }
+
+    @Test
+    fun `un tema viejo con el fondo que late prendido vuelve como estilo Fondo que late`() {
+        val legacy = "mio-1|Viejo|Cinema|true|false|Full|Regular|Medium|true|false|None|true|System"
+        assertEquals(VisualizerStyle.Pulse, SettingsCodec.decodeTheme(legacy)?.widgets?.visualizer)
+        assertEquals(VisualizerStyle.Off, SettingsCodec.decodeTheme(legacy.replace("|None|true|", "|None|false|"))?.widgets?.visualizer)
+    }
+
+    @Test
+    fun `aplicar un tema cambia el visualizador pero no tus widgets de informacion`() {
+        val mine = LauncherSettings.Default.copy(
+            widgets = WidgetSettings(
+                weather = true, countdown = true, calendar = true,
+                visualizerPlace = VisualizerPlace.WithMusic, visualizerInDream = true,
+            ),
+        )
+        val theme = Themes.builtIn.first().copy(widgets = WidgetSettings(visualizer = VisualizerStyle.Bars))
+
+        val applied = theme.applyTo(mine).widgets
+
+        assertEquals(VisualizerStyle.Bars, applied.visualizer)
+        assertEquals(true, applied.weather)
+        assertEquals(true, applied.countdown)
+        assertEquals(true, applied.calendar)
+        assertEquals(VisualizerPlace.WithMusic, applied.visualizerPlace)
+        assertEquals(true, applied.visualizerInDream)
+    }
+
+    @Test
+    fun `el protector escucha el audio solo si tiene algo que dibujar con el`() {
+        assertEquals(false, WidgetSettings(visualizer = VisualizerStyle.Bars).dreamListensToAudio)
+        assertEquals(true, WidgetSettings(visualizer = VisualizerStyle.Bars, visualizerInDream = true).dreamListensToAudio)
+        assertEquals(true, WidgetSettings(visualizer = VisualizerStyle.Pulse).dreamListensToAudio)
+        assertEquals(false, WidgetSettings(visualizer = VisualizerStyle.Off, visualizerInDream = true).dreamListensToAudio)
     }
 
     @Test

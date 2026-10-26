@@ -29,6 +29,10 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import com.consola.launcher.settings.VisualizerStyle
+import kotlinx.coroutines.delay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.consola.launcher.background.AnimatedBackground
@@ -112,12 +116,29 @@ fun HomeScreen(
         onStopOrDispose { if (mediaWidgetOn) viewModel.stopMedia() }
     }
 
-    // El fondo que baila: solo escucha mientras el Inicio está a la vista y la opción está activa.
-    val musicReactive = state.settings.tuning.musicReactive
+    // El visualizador (cualquier estilo, también el fondo que late): escucha SOLO en la pestaña Inicio y con la tele
+    // mostrando Consola. En Apps, Ajustes u otra app no se analiza el audio ni se dibuja nada.
+    val widgets = state.settings.widgets
+    val listens = widgets.listensToAudio && destination == Destination.Home
     val audioLevels = viewModel.audioLevels.collectAsState()
-    LifecycleStartEffect(musicReactive) {
-        if (musicReactive) viewModel.startPulse()
-        onStopOrDispose { if (musicReactive) viewModel.stopPulse() }
+    val spectrum = viewModel.audioSpectrum.collectAsState()
+    LifecycleStartEffect(listens) {
+        if (listens) viewModel.startPulse()
+        onStopOrDispose { if (listens) viewModel.stopPulse() }
+    }
+
+    // El clima: se mira cada minuto mientras el Inicio está a la vista (y se pide de verdad cada media hora).
+    val weather by viewModel.weather.collectAsStateWithLifecycle()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val weatherPlace = state.settings.weatherPlace
+    LaunchedEffect(widgets.weather, weatherPlace) {
+        if (!widgets.weather) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                viewModel.refreshWeather(weatherPlace)
+                delay(60_000)
+            }
+        }
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -126,7 +147,7 @@ fun HomeScreen(
             accent = accent,
             dim = state.settings.tuning.dim.alpha,
             // Pasamos el State (no su valor): así solo se redibuja el fondo, no toda la pantalla, 20 veces por segundo.
-            pulse = audioLevels.takeIf { musicReactive },
+            pulse = audioLevels.takeIf { widgets.visualizer == VisualizerStyle.Pulse },
         )
 
         Column(Modifier.fillMaxSize()) {
@@ -163,6 +184,7 @@ fun HomeScreen(
                             settings = state.settings,
                             nowPlaying = nowPlaying,
                             requestInitialFocus = !initialFocusDone,
+                            extras = HomeExtras(spectrum, accent, weather),
                         ),
                         callbacks = homeCallbacks,
                     )

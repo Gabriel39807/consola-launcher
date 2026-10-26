@@ -1,10 +1,6 @@
 package com.consola.launcher.settings
 
-import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.LazyColumn
-import com.consola.launcher.audio.AudioPulse
 import com.consola.launcher.ui.tvClickable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -67,17 +63,10 @@ fun BackgroundsPanel(
     backgrounds: List<BackgroundCard>,
     upload: UploadUiState,
     tuning: BackgroundTuning,
-    audioStatus: AudioPulse.Status,
-    hasAudioPermission: () -> Boolean,
     onSelect: (BackgroundChoice) -> Unit,
     onTuningChange: ((BackgroundTuning) -> BackgroundTuning) -> Unit,
     onCycleDayNight: (String) -> Unit,
 ) {
-    // El permiso se pide recién al activar "que baile": nadie ve un pedido de micrófono sin saber para qué es.
-    val askMicrophone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) onTuningChange { it.copy(musicReactive = true) }
-    }
-
     LazyColumn(
         modifier = Modifier.fillMaxSize().focusRestorer(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -103,22 +92,6 @@ fun BackgroundsPanel(
                 title = stringResource(R.string.bg_dim),
                 value = stringResource(tuning.dim.label),
                 onClick = { onTuningChange { it.copy(dim = it.dim.next()) } },
-            )
-        }
-        item {
-            SettingsRow(
-                title = stringResource(R.string.bg_music),
-                description = stringResource(
-                    if (audioStatus == AudioPulse.Status.Unavailable) R.string.bg_music_unavailable else R.string.bg_music_desc,
-                ),
-                switchState = tuning.musicReactive,
-                onClick = {
-                    when {
-                        tuning.musicReactive -> onTuningChange { it.copy(musicReactive = false) }
-                        hasAudioPermission() -> onTuningChange { it.copy(musicReactive = true) }
-                        else -> askMicrophone.launch(Manifest.permission.RECORD_AUDIO)
-                    }
-                },
             )
         }
     }

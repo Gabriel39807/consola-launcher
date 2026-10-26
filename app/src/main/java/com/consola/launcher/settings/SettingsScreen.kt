@@ -107,13 +107,16 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                     )
                 }
                 SettingsSection.Clock -> ClockPanel(style = state.settings.clock, onChange = viewModel::updateClock)
-                SettingsSection.Widgets -> WidgetsPanel(widgets = state.settings.widgets, onChange = viewModel::updateWidgets)
+                SettingsSection.Widgets -> WidgetsPanel(
+                    settings = state.settings,
+                    audioStatus = audioStatus,
+                    hasAudioPermission = viewModel::hasAudioPermission,
+                    onChange = viewModel::updateWidgets,
+                )
                 SettingsSection.Backgrounds -> BackgroundsPanel(
                     backgrounds = state.backgrounds,
                     upload = state.upload,
                     tuning = state.settings.tuning,
-                    audioStatus = audioStatus,
-                    hasAudioPermission = viewModel::hasAudioPermission,
                     onSelect = viewModel::selectBackground,
                     onTuningChange = viewModel::updateTuning,
                     onCycleDayNight = viewModel::cycleDayNight,

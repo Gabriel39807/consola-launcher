@@ -1,6 +1,8 @@
 package com.consola.launcher.settings
 
 import com.consola.launcher.LauncherConfig
+import com.consola.launcher.weather.Place
+import com.consola.launcher.widgets.Countdown
 
 /** Qué fondo eligió la persona. null en [LauncherSettings.background] = automático (el video más nuevo). */
 sealed interface BackgroundChoice {
@@ -26,6 +28,10 @@ data class LauncherSettings(
     /** Texto que muestra el protector de pantalla debajo de la hora. Vacío = nada. */
     val dreamMessage: String = "",
     val savedThemes: List<Theme> = emptyList(),
+    /** La cuenta regresiva ("Vacaciones" el 20/12). Se carga desde el celular. */
+    val countdown: Countdown? = null,
+    /** La ciudad del clima. null = automática (según tu conexión a internet). */
+    val weatherPlace: Place? = null,
 ) {
     // Favorita y oculta a la vez no tiene sentido: marcar una cosa desmarca la otra.
     fun toggleFavorite(packageName: String): LauncherSettings =

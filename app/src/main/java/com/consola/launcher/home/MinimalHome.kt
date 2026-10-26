@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -15,6 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.unit.dp
+import com.consola.launcher.settings.VisualizerPlace
 import com.consola.launcher.ui.ClockPlacement
 import com.consola.launcher.ui.LiveClock
 import com.consola.launcher.ui.TvSafeArea
@@ -25,12 +28,11 @@ private val Shadowed = Shadow(Color.Black.copy(alpha = 0.6f), Offset(0f, 2f), 16
 /** Minimal: la hora en grande en el centro y las apps chiquitas abajo. Lo demás es tu fondo. */
 @Composable
 internal fun MinimalHome(model: HomeModel, callbacks: HomeCallbacks, reorder: ReorderState) {
-    Box(Modifier.fillMaxSize()) {
-        // Reloj y música en UNA columna centrada: así nunca se pisan, sea cual sea el formato de la hora.
-        Column(
-            modifier = Modifier.align(Alignment.Center).offset(y = (-56).dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+    // TODO en UNA columna con espacios flexibles arriba y abajo: reloj, música, widgets y apps nunca se pisan,
+    // estén prendidos los widgets que estén. Si sobra lugar, el reloj queda centrado como siempre.
+    Column(Modifier.fillMaxSize().padding(bottom = TvSafeArea.Vertical), horizontalAlignment = Alignment.CenterHorizontally) {
+        Spacer(Modifier.weight(1f))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             LiveClock(
                 style = model.settings.clock,
                 placement = ClockPlacement.Hero,
@@ -38,11 +40,13 @@ internal fun MinimalHome(model: HomeModel, callbacks: HomeCallbacks, reorder: Re
                 shadow = Shadowed,
             )
             if (model.settings.widgets.nowPlaying) {
-                Spacer(Modifier.height(20.dp))
-                NowPlayingPill(state = model.nowPlaying, onAction = callbacks.onMediaAction)
+                Spacer(Modifier.height(16.dp))
+                NowPlayingPill(state = model.nowPlaying, onAction = callbacks.onMediaAction, backdrop = musicBackdrop(model))
             }
+            InfoSlot(model, Modifier.padding(top = 16.dp))
         }
-        Column(Modifier.align(Alignment.BottomCenter).padding(bottom = TvSafeArea.Vertical), horizontalAlignment = Alignment.CenterHorizontally) {
+        Spacer(Modifier.weight(1f))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             MoveHint(reorder.movingKey != null, Modifier.height(24.dp))
             FavoritesLazyRow(
                 reorder = reorder,

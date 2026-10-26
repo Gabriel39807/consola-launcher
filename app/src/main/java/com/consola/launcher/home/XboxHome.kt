@@ -31,7 +31,9 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import com.consola.launcher.ui.TvSafeArea
-import com.consola.launcher.widgets.HomeWidgets
+import com.consola.launcher.widgets.NowPlayingCard
+import com.consola.launcher.ui.LiveClock
+import com.consola.launcher.ui.ClockPlacement
 
 // La destacada mide exactamente dos filas de la grilla: 2 × 76,5 + 9 de separación = 162 dp de alto.
 private val FeaturedWidth = 288.dp
@@ -108,19 +110,26 @@ internal fun XboxHome(model: HomeModel, callbacks: HomeCallbacks, reorder: Reord
                 }
             }
         }
-        Spacer(Modifier.height(16.dp))
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = TvSafeArea.Horizontal).padding(bottom = TvSafeArea.Vertical),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            FocusedTitle(focused, MaterialTheme.typography.headlineLarge, Modifier.weight(1f))
-            HomeWidgets(
-                widgets = model.settings.widgets,
-                clock = model.settings.clock,
-                nowPlaying = model.nowPlaying,
-                onMediaAction = callbacks.onMediaAction,
-                vertical = false,
-            )
+        Spacer(Modifier.weight(1f))
+        // Abajo, dos pisos: el nombre de la app (y el reloj grande), y debajo la música y la info LADO A LADO.
+        // En un solo piso no entraban: nombre + reloj + música + info pasaban el ancho de la tele y se pisaban.
+        Column(Modifier.fillMaxWidth().padding(horizontal = TvSafeArea.Horizontal).padding(bottom = TvSafeArea.Vertical)) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                FocusedTitle(focused, MaterialTheme.typography.headlineLarge, Modifier.weight(1f))
+                if (model.settings.widgets.bigClock) {
+                    // Compacto: con el reloj protagonista no entraban la grilla, el reloj y la fila de widgets (medido en la tele).
+                    LiveClock(style = model.settings.clock, placement = ClockPlacement.Compact, horizontalAlignment = Alignment.End)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                if (model.settings.widgets.nowPlaying) {
+                    NowPlayingCard(model.nowPlaying, callbacks.onMediaAction, width = 380.dp, backdrop = musicBackdrop(model))
+                } else {
+                    Spacer(Modifier.width(1.dp))
+                }
+                InfoSlot(model)
+            }
         }
     }
 }

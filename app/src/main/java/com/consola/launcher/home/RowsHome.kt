@@ -32,6 +32,7 @@ import androidx.tv.material3.Text
 import com.consola.launcher.R
 import com.consola.launcher.apps.AppCategory
 import com.consola.launcher.ui.TvSafeArea
+import com.consola.launcher.settings.VisualizerPlace
 import com.consola.launcher.widgets.NowPlayingPill
 
 /**
@@ -58,8 +59,10 @@ internal fun RowsHome(model: HomeModel, callbacks: HomeCallbacks, reorder: Reord
             verticalAlignment = Alignment.CenterVertically,
         ) {
             FocusedTitle(focused, MaterialTheme.typography.headlineLarge, Modifier.weight(1f))
-            if (model.settings.widgets.nowPlaying) NowPlayingPill(model.nowPlaying, callbacks.onMediaAction)
+            if (model.settings.widgets.nowPlaying) NowPlayingPill(model.nowPlaying, callbacks.onMediaAction, backdrop = musicBackdrop(model))
         }
+        // Fija debajo del encabezado, fuera de la lista: dentro de la lista se iba medio escondida al enfocar las apps.
+        InfoSlot(model, Modifier.padding(start = TvSafeArea.Horizontal, top = 4.dp, bottom = 8.dp))
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = TvSafeArea.Vertical)) {
             item(key = "favorites") {
                 SectionTitle(stringResource(R.string.row_favorites)) {

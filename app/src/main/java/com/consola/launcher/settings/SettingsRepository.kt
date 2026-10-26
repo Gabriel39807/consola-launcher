@@ -1,5 +1,7 @@
 package com.consola.launcher.settings
 
+import com.consola.launcher.weather.Place
+import com.consola.launcher.widgets.Countdown
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
@@ -45,11 +47,19 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             nowPlaying = prefs[WIDGET_NOW_PLAYING] ?: true,
             bigClock = prefs[WIDGET_BIG_CLOCK] ?: false,
             player = SettingsCodec.decodeEnum(prefs[WIDGET_PLAYER], PreferredPlayer.Auto),
+            // Quien tenía prendido "el fondo que baila" (v0.6 o antes) lo sigue teniendo, ahora como estilo.
+            visualizer = prefs[WIDGET_VISUALIZER]?.let { SettingsCodec.decodeEnum(it, VisualizerStyle.Off) }
+                ?: if (prefs[BG_MUSIC] == true) VisualizerStyle.Pulse else VisualizerStyle.Off,
+            visualizerPlace = SettingsCodec.decodeEnum(prefs[WIDGET_VISUALIZER_PLACE], VisualizerPlace.AboveApps),
+            weather = prefs[WIDGET_WEATHER] ?: false,
+            fahrenheit = prefs[WIDGET_FAHRENHEIT] ?: false,
+            countdown = prefs[WIDGET_COUNTDOWN] ?: false,
+            calendar = prefs[WIDGET_CALENDAR] ?: false,
+            visualizerInDream = prefs[WIDGET_VISUALIZER_DREAM] ?: false,
         ),
         tuning = BackgroundTuning(
             rotation = SettingsCodec.decodeEnum(prefs[BG_ROTATION], Rotation.Off),
             dim = SettingsCodec.decodeEnum(prefs[BG_DIM], DimLevel.None),
-            musicReactive = prefs[BG_MUSIC] ?: false,
             dayVideo = prefs[BG_DAY],
             nightVideo = prefs[BG_NIGHT],
         ),
@@ -57,6 +67,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         customNames = prefs[CUSTOM_NAMES]?.let(SettingsCodec::decodeNames).orEmpty(),
         dreamMessage = prefs[DREAM_MESSAGE].orEmpty(),
         savedThemes = prefs[SAVED_THEMES]?.let(SettingsCodec::decodeThemes).orEmpty(),
+        countdown = Countdown.decode(prefs[COUNTDOWN]),
+        weatherPlace = Place.decode(prefs[WEATHER_PLACE]),
     )
 
     private fun write(prefs: MutablePreferences, settings: LauncherSettings) {
@@ -73,9 +85,18 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         prefs[WIDGET_NOW_PLAYING] = settings.widgets.nowPlaying
         prefs[WIDGET_BIG_CLOCK] = settings.widgets.bigClock
         prefs[WIDGET_PLAYER] = settings.widgets.player.name
+        prefs[WIDGET_VISUALIZER] = settings.widgets.visualizer.name
+        prefs[WIDGET_VISUALIZER_PLACE] = settings.widgets.visualizerPlace.name
+        prefs[WIDGET_WEATHER] = settings.widgets.weather
+        prefs[WIDGET_FAHRENHEIT] = settings.widgets.fahrenheit
+        prefs[WIDGET_COUNTDOWN] = settings.widgets.countdown
+        prefs[WIDGET_CALENDAR] = settings.widgets.calendar
+        prefs[WIDGET_VISUALIZER_DREAM] = settings.widgets.visualizerInDream
+        prefs.remove(BG_MUSIC)
+        prefs.putOrRemove(COUNTDOWN, settings.countdown?.encode())
+        prefs.putOrRemove(WEATHER_PLACE, settings.weatherPlace?.encode())
         prefs[BG_ROTATION] = settings.tuning.rotation.name
         prefs[BG_DIM] = settings.tuning.dim.name
-        prefs[BG_MUSIC] = settings.tuning.musicReactive
         prefs.putOrRemove(BG_DAY, settings.tuning.dayVideo)
         prefs.putOrRemove(BG_NIGHT, settings.tuning.nightVideo)
         prefs[FONT] = settings.font.name
@@ -101,8 +122,18 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val WIDGET_NOW_PLAYING = booleanPreferencesKey("widget_now_playing")
         val WIDGET_BIG_CLOCK = booleanPreferencesKey("widget_big_clock")
         val WIDGET_PLAYER = stringPreferencesKey("widget_player")
+        val WIDGET_VISUALIZER = stringPreferencesKey("widget_visualizer")
+        val WIDGET_VISUALIZER_PLACE = stringPreferencesKey("widget_visualizer_place")
+        val WIDGET_WEATHER = booleanPreferencesKey("widget_weather")
+        val WIDGET_FAHRENHEIT = booleanPreferencesKey("widget_fahrenheit")
+        val WIDGET_COUNTDOWN = booleanPreferencesKey("widget_countdown")
+        val WIDGET_CALENDAR = booleanPreferencesKey("widget_calendar")
+        val WIDGET_VISUALIZER_DREAM = booleanPreferencesKey("widget_visualizer_dream")
+        val COUNTDOWN = stringPreferencesKey("countdown")
+        val WEATHER_PLACE = stringPreferencesKey("weather_place")
         val BG_ROTATION = stringPreferencesKey("bg_rotation")
         val BG_DIM = stringPreferencesKey("bg_dim")
+        // Solo se lee para migrar: hasta la v0.6 el fondo que late era un interruptor de Fondos.
         val BG_MUSIC = booleanPreferencesKey("bg_music")
         val BG_DAY = stringPreferencesKey("bg_day")
         val BG_NIGHT = stringPreferencesKey("bg_night")

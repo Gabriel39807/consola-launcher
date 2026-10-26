@@ -11,16 +11,18 @@ data class Theme(
     val clock: ClockStyle,
     val widgets: WidgetSettings,
     val dim: DimLevel,
-    val musicReactive: Boolean,
     val font: FontChoice,
 ) {
+    /**
+     * Del tema se toma el LOOK de los widgets: música, reloj grande y estilo del visualizador. Lo tuyo no se toca:
+     * tu reproductor, dónde va el visualizador (y si se ve en el protector), el clima, la cuenta regresiva y el calendario.
+     */
     fun applyTo(settings: LauncherSettings): LauncherSettings = settings.copy(
         layout = layout,
         clock = clock,
-        // El reproductor es tuyo, no del tema: aplicar "Gamer" no te cambia Spotify por YouTube Music.
-        widgets = widgets.copy(player = settings.widgets.player),
+        widgets = settings.widgets.copy(nowPlaying = widgets.nowPlaying, bigClock = widgets.bigClock, visualizer = widgets.visualizer),
         font = font,
-        tuning = settings.tuning.copy(dim = dim, musicReactive = musicReactive),
+        tuning = settings.tuning.copy(dim = dim),
     )
 
     companion object {
@@ -29,9 +31,12 @@ data class Theme(
             name = name,
             layout = settings.layout,
             clock = settings.clock,
-            widgets = settings.widgets,
+            widgets = WidgetSettings(
+                nowPlaying = settings.widgets.nowPlaying,
+                bigClock = settings.widgets.bigClock,
+                visualizer = settings.widgets.visualizer,
+            ),
             dim = settings.tuning.dim,
-            musicReactive = settings.tuning.musicReactive,
             font = settings.font,
         )
     }
@@ -43,22 +48,24 @@ object Themes {
         Theme(
             id = "cine", name = "Cine", layout = HomeLayout.Cinema,
             clock = ClockStyle(), widgets = WidgetSettings(nowPlaying = true),
-            dim = DimLevel.None, musicReactive = false, font = FontChoice.Montserrat,
+            dim = DimLevel.None, font = FontChoice.Montserrat,
         ),
         Theme(
             id = "gamer", name = "Gamer", layout = HomeLayout.Xbox,
-            clock = ClockStyle(weight = ClockWeight.Bold), widgets = WidgetSettings(nowPlaying = true),
-            dim = DimLevel.Low, musicReactive = true, font = FontChoice.Orbitron,
+            clock = ClockStyle(weight = ClockWeight.Bold),
+            widgets = WidgetSettings(nowPlaying = true, visualizer = VisualizerStyle.Bars),
+            dim = DimLevel.Low, font = FontChoice.Orbitron,
         ),
         Theme(
             id = "zen", name = "Zen", layout = HomeLayout.Minimal,
             clock = ClockStyle(weight = ClockWeight.Light, size = ClockSize.Large, date = DateStyle.Weekday),
-            widgets = WidgetSettings(nowPlaying = true), dim = DimLevel.Medium, musicReactive = false, font = FontChoice.Playfair,
+            widgets = WidgetSettings(nowPlaying = true, visualizer = VisualizerStyle.Wave), dim = DimLevel.Medium, font = FontChoice.Playfair,
         ),
         Theme(
             id = "arcade", name = "Arcade", layout = HomeLayout.Ps5,
-            clock = ClockStyle(use24h = false, weight = ClockWeight.Bold), widgets = WidgetSettings(nowPlaying = true, bigClock = false),
-            dim = DimLevel.None, musicReactive = true, font = FontChoice.Bebas,
+            clock = ClockStyle(use24h = false, weight = ClockWeight.Bold),
+            widgets = WidgetSettings(nowPlaying = true, bigClock = false, visualizer = VisualizerStyle.Pulse),
+            dim = DimLevel.None, font = FontChoice.Bebas,
         ),
     )
 }

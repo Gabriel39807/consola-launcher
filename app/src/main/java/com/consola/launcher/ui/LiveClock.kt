@@ -29,7 +29,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /** Dónde va el reloj: en la barra de pestañas (chico) o como protagonista (Minimal, widget, protector). */
-enum class ClockPlacement { Bar, Hero }
+/** Bar: la barra de arriba. Hero: la hora protagonista. Compact: grande pero para lugares justos (Xbox). */
+enum class ClockPlacement { Bar, Hero, Compact }
 
 /** El único reloj de la app: todos los lugares usan este, así un cambio en Ajustes → Reloj se ve en todos. */
 @Composable
@@ -90,6 +91,11 @@ private fun clockTextStyles(style: ClockStyle, placement: ClockPlacement): Pair<
             ClockSize.Small -> type.titleMedium to type.labelSmall
             ClockSize.Medium -> type.titleLarge to type.labelMedium
             ClockSize.Large -> type.headlineMedium to type.labelLarge
+        }
+        ClockPlacement.Compact -> when (style.size) {
+            ClockSize.Small -> type.headlineMedium to type.labelMedium
+            ClockSize.Medium -> type.displaySmall to type.labelLarge
+            ClockSize.Large -> type.displayMedium to type.titleSmall
         }
         ClockPlacement.Hero -> when (style.size) {
             ClockSize.Small -> type.displaySmall to type.titleMedium

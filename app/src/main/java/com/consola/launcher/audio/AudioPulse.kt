@@ -24,6 +24,10 @@ class AudioPulse(context: Context) {
     private val appContext = context.applicationContext
     private val _levels = MutableStateFlow(SILENCE)
     val levels: StateFlow<Bands> = _levels.asStateFlow()
+    // Las barras del visualizador (de graves a agudos), de 0 a 1.
+    private val _spectrum = MutableStateFlow(FloatArray(Spectrum.BARS))
+    val spectrum: StateFlow<FloatArray> = _spectrum.asStateFlow()
+    private val spectrumGain = SpectrumGain()
     private val _status = MutableStateFlow(Status.Off)
     val status: StateFlow<Status> = _status.asStateFlow()
 
@@ -42,6 +46,7 @@ class AudioPulse(context: Context) {
     private var samples = 0
     private var bassMin = 1f
     private var bassMax = 0f
+    private var rawSpectrumMax = 0f
 
     fun hasPermission(): Boolean =
         appContext.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
@@ -77,6 +82,7 @@ class AudioPulse(context: Context) {
         visualizer?.release()
         visualizer = null
         _levels.value = SILENCE
+        _spectrum.value = FloatArray(Spectrum.BARS)
         if (_status.value == Status.Running) _status.value = Status.Off
     }
 
@@ -84,6 +90,7 @@ class AudioPulse(context: Context) {
         override fun onWaveFormDataCapture(visualizer: Visualizer, waveform: ByteArray, samplingRate: Int) = Unit
 
         override fun onFftDataCapture(visualizer: Visualizer, fft: ByteArray, samplingRate: Int) {
+            publishSpectrum(fft, samplingRate)
             val raw = AudioLevels.rawBands(fft, samplingRate)
             val target = Bands(bassGain.normalize(raw.bass), midGain.normalize(raw.mid), trebleGain.normalize(raw.treble))
             recordRange(target.bass)
@@ -100,18 +107,38 @@ class AudioPulse(context: Context) {
         }
     }
 
+    private fun publishSpectrum(fft: ByteArray, samplingRate: Int) {
+        val raw = Spectrum.raw(fft, samplingRate)
+        if (samples <= DIAGNOSTIC_SAMPLES) rawSpectrumMax = maxOf(rawSpectrumMax, raw.maxOrNull() ?: 0f)
+        val target = spectrumGain.normalize(raw)
+        val previous = _spectrum.value
+        // Silencio que sigue siendo silencio: no publicamos nada, así nadie se redibuja por un array de ceros nuevo.
+        if (target.all { it == 0f } && previous.all { it < SILENT }) {
+            if (previous.any { it != 0f }) _spectrum.value = FloatArray(target.size)
+            return
+        }
+        // Sube rápido (se siente el golpe) y baja lento (no titila). Array nuevo: el StateFlow avisa el cambio.
+        _spectrum.value = FloatArray(target.size) { i -> AudioLevels.smooth(previous.getOrElse(i) { 0f }, target[i], attack = 0.7f, release = 0.25f) }
+    }
+
     private fun recordRange(bass: Float) {
         if (samples > DIAGNOSTIC_SAMPLES) return
         bassMin = minOf(bassMin, bass)
         bassMax = maxOf(bassMax, bass)
-        if (++samples == DIAGNOSTIC_SAMPLES) Log.i(TAG, "Rango de graves en 5 s: %.2f – %.2f".format(bassMin, bassMax))
+        if (++samples == DIAGNOSTIC_SAMPLES) {
+            // El pico crudo del espectro dice si el "silencio" de esta tele queda bajo la compuerta de ruido (4).
+            Log.i(TAG, "Rango de graves en 5 s: %.2f – %.2f · pico crudo del espectro: %.1f".format(bassMin, bassMax, rawSpectrumMax))
+        }
     }
 
     private companion object {
         const val TAG = "ConsolaAudio"
         const val DIAGNOSTIC_SAMPLES = 100
         const val OUTPUT_MIX_SESSION = 0
-        const val CAPTURE_SIZE = 256
+        // 1024 muestras = casilleros de ~47 Hz: los graves se reparten en varias barras (con 256 eran de 187 Hz
+        // y todo el bajo caía en una o dos). Se ajusta al rango que permita cada tele.
+        const val CAPTURE_SIZE = 1024
+        const val SILENT = 0.01f
         val SILENCE = Bands(0f, 0f, 0f)
     }
 }

@@ -51,6 +51,7 @@
     <button data-tab="fondos" class="on">Fondos</button>
     <button data-tab="apps">Apps</button>
     <button data-tab="protector">Protector</button>
+    <button data-tab="widgets">Widgets</button>
   </nav>
 
   <!-- ===== Fondos ===== -->
@@ -90,6 +91,26 @@
       <div class="status" id="messageStatus"></div>
     </div>
   </section>
+
+  <!-- ===== Widgets ===== -->
+  <section id="widgets">
+    <div class="card">
+      <h2>Clima</h2>
+      <p class="lead" style="margin-bottom:12px">Escribí tu ciudad. Vacío = automática (según tu conexión a internet).</p>
+      <input id="city" type="text" maxlength="60" placeholder="Ej: Medellín">
+      <div class="row"><button class="small primary" id="saveCity">Guardar</button></div>
+      <div class="status" id="cityStatus"></div>
+    </div>
+    <div class="card">
+      <h2>Cuenta regresiva</h2>
+      <p class="lead" style="margin-bottom:12px">¿Qué estás esperando? Dejá el título vacío para borrarla.</p>
+      <input id="countdownTitle" type="text" maxlength="30" placeholder="Ej: Vacaciones">
+      <input id="countdownDate" type="date" style="margin-top:8px">
+      <div class="row"><button class="small primary" id="saveCountdown">Guardar</button></div>
+      <div class="status" id="countdownStatus"></div>
+    </div>
+    <p class="lead">Prendé cada widget en la tele: Ajustes → Widgets.</p>
+  </section>
 </main>
 
 <script>
@@ -104,6 +125,7 @@
       document.querySelectorAll('section').forEach(function (s) { s.classList.toggle('on', s.id === button.dataset.tab); });
       if (button.dataset.tab === 'apps') loadApps();
       if (button.dataset.tab === 'protector') loadMessage();
+      if (button.dataset.tab === 'widgets') loadWidgets();
     };
   });
 
@@ -295,6 +317,37 @@
   document.getElementById('saveMessage').onclick = function () {
     post('/message?text=' + encodeURIComponent(message.value), null, function (ok) {
       setStatus(messageStatus, ok ? (message.value.trim() ? 'Guardado. Lo vas a ver en el protector.' : 'Listo: el protector no muestra mensaje.') : 'No se pudo guardar.', ok ? 'ok' : 'err');
+    }).send();
+  };
+
+  // ---------- Widgets ----------
+  var city = document.getElementById('city');
+  var countdownTitle = document.getElementById('countdownTitle');
+  var countdownDate = document.getElementById('countdownDate');
+
+  function loadWidgets() {
+    fetch(base + '/widgets').then(function (r) { return r.json(); }).then(function (w) {
+      city.value = w.city || '';
+      countdownTitle.value = w.countdownTitle || '';
+      countdownDate.value = w.countdownDate || '';
+    }).catch(function () {});
+  }
+
+  document.getElementById('saveCity').onclick = function () {
+    var status = document.getElementById('cityStatus');
+    setStatus(status, 'Buscando…');
+    post('/city?name=' + encodeURIComponent(city.value), null, function (ok, reply) {
+      if (ok && reply.city) { city.value = reply.city; setStatus(status, 'Listo: el clima es de ' + reply.city + '.', 'ok'); }
+      else if (ok) setStatus(status, 'Listo: la ciudad se detecta sola.', 'ok');
+      else setStatus(status, (reply && reply.message) || 'No se pudo guardar.', 'err');
+    }).send();
+  };
+
+  document.getElementById('saveCountdown').onclick = function () {
+    var status = document.getElementById('countdownStatus');
+    if (countdownTitle.value.trim() && !countdownDate.value) { setStatus(status, 'Elegí una fecha.', 'err'); return; }
+    post('/countdown?title=' + encodeURIComponent(countdownTitle.value) + '&date=' + encodeURIComponent(countdownDate.value), null, function (ok) {
+      setStatus(status, ok ? (countdownTitle.value.trim() ? 'Guardada. Mirala en el Inicio.' : 'Listo: sin cuenta regresiva.') : 'Esa fecha no es válida.', ok ? 'ok' : 'err');
     }).send();
   };
 

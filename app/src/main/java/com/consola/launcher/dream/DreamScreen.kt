@@ -1,5 +1,7 @@
 package com.consola.launcher.dream
 
+import com.consola.launcher.settings.VisualizerStyle
+import com.consola.launcher.widgets.MusicVisualizer
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -66,6 +69,7 @@ fun DreamScreen(graph: LauncherGraph) {
     val videos by graph.backgrounds.videos.collectAsState()
     val nowPlaying by graph.nowPlaying.state.collectAsState()
     val audioLevels = graph.audioPulse.levels.collectAsState()
+    val spectrum = graph.audioPulse.spectrum.collectAsState()
     var libraryScanned by remember { mutableStateOf(false) }
     var corner by remember { mutableIntStateOf(0) }
     var epochMinute by remember { mutableLongStateOf(System.currentTimeMillis() / 60_000) }
@@ -87,10 +91,15 @@ fun DreamScreen(graph: LauncherGraph) {
         graph.nowPlaying.start()
         onStopOrDispose { graph.nowPlaying.stop() }
     }
-    val musicReactive = settings?.tuning?.musicReactive == true
-    LifecycleStartEffect(musicReactive) {
-        if (musicReactive) graph.audioPulse.start()
-        onStopOrDispose { if (musicReactive) graph.audioPulse.stop() }
+    // El fondo que late siempre; las ondas solo si pediste "También en el protector". Si no hay nada que dibujar
+    // con el audio, el protector ni lo escucha.
+    val widgets = settings?.widgets
+    val musicReactive = widgets?.visualizer == VisualizerStyle.Pulse
+    val drawsWaves = widgets != null && widgets.drawsVisualizer && widgets.visualizerInDream
+    val listens = widgets?.dreamListensToAudio == true
+    LifecycleStartEffect(listens) {
+        if (listens) graph.audioPulse.start()
+        onStopOrDispose { if (listens) graph.audioPulse.stop() }
     }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
@@ -104,6 +113,16 @@ fun DreamScreen(graph: LauncherGraph) {
                 accent = DreamAccent,
                 withScrim = false,
                 pulse = audioLevels.takeIf { musicReactive },
+            )
+        }
+        if (drawsWaves && widgets != null) {
+            MusicVisualizer(
+                spectrum = spectrum,
+                style = widgets.visualizer,
+                accent = DreamAccent,
+                // Bajas y suaves: la hora y la canción cambian de esquina cada minuto, y abajo no las pueden tapar.
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(56.dp).padding(horizontal = 48.dp),
+                intensity = 0.7f,
             )
         }
         DreamOverlay(
